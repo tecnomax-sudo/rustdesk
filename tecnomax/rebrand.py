@@ -130,16 +130,32 @@ def main():
            r'child: const Text\(\s*"RustDesk",',
            f'child: const Text(\n                              "{rust_str(nome)}",', dry)
 
+    # Cores da interface: azul de ação da Tecnomax (#1a56db) no lugar do azul da RustDesk,
+    # e o azul de identidade (#4285F4) no número do ID
+    tema = "flutter/lib/common.dart"
+    trocar(tema, r'static const Color accent = Color\(0xFF0071FF\);', 'static const Color accent = Color(0xFF1A56DB);', dry)
+    trocar(tema, r'static const Color accent50 = Color\(0x770071FF\);', 'static const Color accent50 = Color(0x771A56DB);', dry)
+    trocar(tema, r'static const Color accent80 = Color\(0xAA0071FF\);', 'static const Color accent80 = Color(0xAA1A56DB);', dry)
+    trocar(tema, r'static const Color idColor = Color\(0xFF00B6F0\);', 'static const Color idColor = Color(0xFF4285F4);', dry)
+    trocar(tema, r'static const Color button = Color\(0xFF2C8CFF\);', 'static const Color button = Color(0xFF1A56DB);', dry)
+
     if not dry:
         gravar_pendentes()
 
-    # Ícones: copia o que existir em tecnomax/marca/ por cima do original
+    # Ícones e logos: copia o que existir em tecnomax/marca/ por cima do original.
+    # Ícone = só a marca de 4 cores (versão reduzida aprovada pelo CEO em 09/11/2026);
+    # logo_light/logo_dark = logo oficial no topo da tela inicial (o Flutter já procura esses nomes).
     destinos = {
         "icon.ico": ["res/icon.ico", "flutter/windows/runner/resources/app_icon.ico"],
         "tray-icon.ico": ["res/tray-icon.ico"],
-        "icon.png": ["res/icon.png"],
-        "icon.svg": ["flutter/assets/icon.svg"],
-        "logo.svg": ["res/logo.svg"],
+        "icon.png": ["res/icon.png", "res/mac-icon.png"],
+        "32x32.png": ["res/32x32.png"],
+        "64x64.png": ["res/64x64.png"],
+        "128x128.png": ["res/128x128.png"],
+        "128x128@2x.png": ["res/128x128@2x.png"],
+        "app-icon.png": ["flutter/assets/icon.png"],
+        "logo_light.png": ["flutter/assets/logo_light.png"],
+        "logo_dark.png": ["flutter/assets/logo_dark.png"],
     }
     for origem, alvos in destinos.items():
         arq = MARCA / origem

@@ -6,6 +6,11 @@ name: tecnomax-windows
 
 on:
   workflow_dispatch:
+    inputs:
+      publicar:
+        description: "Publicar como release (vira o download do site)"
+        type: boolean
+        default: false
   push:
     branches: [tecnomax]
     paths: ["tecnomax/rebrand.py", "tecnomax/marca/**", ".github/workflows/tecnomax-windows.yml"]
@@ -154,3 +159,42 @@ jobs:
           name: tecnomax-connect-windows-x64
           path: saida
           if-no-files-found: error
+
+  # Release pública: o site aponta para .../releases/latest/download/TecnomaxConnect-x64.exe,
+  # então o nome do arquivo é fixo. Só roda no disparo manual com "publicar".
+  release:
+    needs: [build-windows]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publicar }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tecnomax-connect-windows-x64
+          path: saida
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          cd saida
+          mv TecnomaxConnect-*-x64.exe TecnomaxConnect-x64.exe
+          sha256sum TecnomaxConnect-x64.exe > TecnomaxConnect-x64.exe.sha256
+          DATA=$(date -u +%Y.%m.%d)
+          CURTO=${GITHUB_SHA::7}
+          TAG="connect-v${DATA}-${CURTO}"
+          cat > notas.md <<EOF
+          Tecnomax Connect para Windows (x64), versão ${DATA}.
+
+          - Servidor: ${TM_RENDEZVOUS_SERVER}
+          - SHA256: $(cut -d' ' -f1 TecnomaxConnect-x64.exe.sha256)
+          - Executável sem assinatura de código: o Windows avisa "editor desconhecido" ao abrir.
+
+          Baseado no RustDesk (AGPL-3.0). Código-fonte desta versão:
+          https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}
+          e do servidor: https://github.com/tecnomax-sudo/rustdesk-server/tree/tecnomax
+          EOF
+          gh release create "$TAG" TecnomaxConnect-x64.exe TecnomaxConnect-x64.exe.sha256 \
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Tecnomax Connect ${DATA}" --notes-file notas.md --latest
