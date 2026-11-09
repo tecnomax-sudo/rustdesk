@@ -109,6 +109,15 @@ def main():
            f'SyncReturn("{rust_str(nome)}".to_owned())', dry)
     trocar("src/platform/windows.rs", r'/v DisplayName /t REG_SZ /d \\"\{app_name\}\\"',
            f'/v DisplayName /t REG_SZ /d \\"{rust_str(nome)}\\"', dry)
+    # Instalação: o XCOPY leva o exe com o nome que ele tem no pacote portátil (rustdesk.exe), mas
+    # todo o resto do script (registro, atalhos, serviço) aponta para "<nome técnico>.exe". No
+    # upstream isso passa porque RustDesk.exe e rustdesk.exe são o mesmo arquivo no Windows; com
+    # outro nome o serviço não é criado e a instalação termina com "elevated exit code 9059".
+    # A atualização (update_me) já renomeia; a instalação passa a renomear também.
+    trocar("src/platform/windows.rs",
+           r'copy_exe = copy_exe_cmd\(&src_exe, &exe, &path\)\?,\n\s+import_config = ',
+           'copy_exe = format!("{}\\r\\n{}", copy_exe_cmd(&src_exe, &exe, &path)?, '
+           'rename_exe_cmd(&src_exe, &path)?),\n        import_config = ', dry)
     trocar(cfg, r'ORG: RwLock<String> = RwLock::new\("com\.carriez"\.to_owned\(\)\)',
            f'ORG: RwLock<String> = RwLock::new("{rust_str(org)}".to_owned())', dry)
 
