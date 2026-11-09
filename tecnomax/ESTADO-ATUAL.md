@@ -29,4 +29,5 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
 - 🟡 Ícones da marca em `tecnomax/marca/`.
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
 - 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).
+- 🟡 O `.exe` interno ainda se chama `rustdesk.exe`: o portátil extrai para `%LOCALAPPDATA%ustdesk`, a mesma pasta do RustDesk oficial (a configuração fica separada, em `%APPDATA%Tecnomax Connect`).
 - 🔵 macOS e Android: identificador do app e notarization ficam para depois do Windows.

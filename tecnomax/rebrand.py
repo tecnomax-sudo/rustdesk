@@ -119,6 +119,12 @@ def main():
     trocar("Cargo.toml", r'^FileDescription = "RustDesk Remote Desktop"$',
            f'FileDescription = "{rust_str(nome)}"', dry)
 
+    # Metadados do empacotador portátil (o .exe que o usuário baixa)
+    pk = "libs/portable/Cargo.toml"
+    trocar(pk, r'^LegalCopyright = ".*"$', f'LegalCopyright = "{rust_str(copyright_)}"', dry)
+    trocar(pk, r'^ProductName = "RustDesk"$', f'ProductName = "{rust_str(nome)}"', dry)
+    trocar(pk, r'^FileDescription = "RustDesk Remote Desktop"$', f'FileDescription = "{rust_str(nome)}"', dry)
+
     # Título fixo na barra de abas do Flutter
     trocar("flutter/lib/desktop/widgets/tabbar_widget.dart",
            r'child: const Text\(\s*"RustDesk",',
