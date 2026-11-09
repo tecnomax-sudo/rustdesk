@@ -36,11 +36,19 @@ atualizado: 09/11/2026
   - conferido: SHA256 do download igual ao publicado; o portátil abre, registra por `wss` e mostra o título certo.
 - **Sessões reais pelo servidor do piloto** em 09/11/2026 (20:04 e 20:05 UTC), pelo relay, com encerramento normal.
 - **Compra do RustDesk Server Pro: decidida e anulada pelo CEO no mesmo dia (09/11/2026).** Segue o fork próprio; não propor de novo.
+- **Release `connect-v2026.11.09-0d501ee` (09/11/2026 21:34 UTC):** a instalação passa a renomear o exe
+  copiado (`rustdesk.exe` → `TecnomaxConnect.exe`); antes falhava com "exit code 9059" e "O Windows não
+  pode encontrar ...TecnomaxConnect.exe". SHA256 do download conferido. Instalação ainda não testada (pede elevação).
 
 ## Aprendido
 - Dois apps na mesma máquina (RustDesk oficial + Tecnomax Connect) usam o **mesmo ID** (vem do hardware) com
   chaves diferentes; o servidor atende quem registrou por último e a conexão falha de forma intermitente
   ("Falha ao conectar ao servidor de rendezvous"). Não deixar os dois abertos apontando para o nosso servidor.
+- **Tela preta não é bug do produto quando a máquina controlada está em RDP**: com a janela do RDP
+  minimizada ou desconectada o Windows para de desenhar e a captura vem preta (vídeo chega e decodifica
+  normal). Testar em máquina física ou pelo console da VM. Diagnóstico de 09/11/2026.
+- Quem controla de dentro de uma sessão RDP deve desligar "renderização por textura"
+  (`use-texture-render = 'N'` no `_local.toml`).
 - O hbbs descarta no arranque o relay cujo nome não resolve (`relay-servers=[]`). Depois de criar um nome no
   DNS, conferir essa linha no log e reiniciar o hbbs se vier vazia.
 
@@ -55,7 +63,7 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
 - 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).
 - 🟡 O `.exe` interno ainda se chama `rustdesk.exe`: o portátil extrai para `%LOCALAPPDATA%\rustdesk`, a mesma pasta do RustDesk oficial (a configuração fica separada, em `%APPDATA%\Tecnomax Connect`).
-- 🟡 Testar a **instalação completa** (botão Instalar, pede elevação) com a release `eacec60` e conferir
+- 🟡 Testar a **instalação completa** (botão Instalar, pede elevação) com a release `0d501ee` e conferir
   visualmente que a tela de servidor sumiu.
 - 🔵 A consulta de "online" da lista de recentes falha por WebSocket (`query onlines ... Connection reset`):
   as bolinhas de online não acendem. Não impede conectar.
