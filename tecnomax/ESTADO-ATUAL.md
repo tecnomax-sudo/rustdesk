@@ -7,24 +7,26 @@ atualizado: 09/11/2026
 
 ## Feito (09/11/2026)
 - Decisão do CEO: **fork próprio**, em vez do RustDesk Server Pro.
-- Forks públicos criados: `tecnomax-sudo/rustdesk` e `tecnomax-sudo/hbb_common`.
-- Branch `tecnomax` com `tecnomax/rebrand.py`, testado contra a v1.5.3 (commit upstream 95cca3f):
-  todas as trocas acham o alvo, uma segunda execução falha sem gravar nada, e um nome contendo
-  "RustDesk" é recusado.
-
 - Nome do produto definido pelo CEO: **Tecnomax Connect** (grafia exata). Fica como padrão no `rebrand.py`.
+- Forks públicos: `tecnomax-sudo/rustdesk` (cliente), `tecnomax-sudo/hbb_common` e
+  `tecnomax-sudo/rustdesk-server` (servidor com registro por WebSocket).
+- `tecnomax/rebrand.py`: nome, servidor, chave, organização, chave do `custom.txt`, metadados do
+  `.exe`, título, WebSocket fixo e `wss` para domínio.
+- **Servidor de teste**: CT 120 `connect-teste` no labsai, com hbbs/hbbr do fork atrás do Cloudflare
+  Tunnel `connect-teste.tecnomax.tech`, sem porta aberta.
+- **Sessão real aprovada**: a Dell controlou a YAGO-PC pelo túnel, com o cliente oficial configurado
+  para o nosso servidor.
+- Workflow `tecnomax-windows.yml` criado para gerar o `.exe` do Tecnomax Connect.
 
 ## Observação
 O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso o fork
-`tecnomax-sudo/hbb_common` não é necessário hoje: ele só vira necessário se um dia for preciso
-mudar código do hbb_common além das constantes.
+`tecnomax-sudo/hbb_common` não é necessário hoje.
 
 ## Pendências
-- 🟠 **Onde sobe o hbbs/hbbr**: precisa de IP público, das portas 21115–21119 (TCP) e 21116 (UDP),
-  e de DNS sem proxy da Cloudflare. Não usar o labsai.
+- 🟠 **Servidor de produção**: o CT 120 é laboratório, num host que fica na rede do RI. Definir onde
+  roda o hbbs/hbbr de verdade (ainda pelo túnel, sem porta aberta).
 - 🟠 **Certificado de assinatura de código (Windows)**: sem ele, o SmartScreen e o Defender barram o executável.
 - 🟡 Ícones da marca em `tecnomax/marca/`.
-- 🟡 Ligar o `rebrand.py` no `.github/workflows/flutter-build.yml`, depois do checkout de cada job,
-  e trocar a assinatura remota da RustDesk (`SIGN_BASE_URL`) pela nossa.
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
+- 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).
 - 🔵 macOS e Android: identificador do app e notarization ficam para depois do Windows.

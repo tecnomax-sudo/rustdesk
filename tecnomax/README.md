@@ -30,6 +30,8 @@ Isso evita gerar um cliente pela metade, metade Tecnomax e metade RustDesk.
 |---|---|
 | Servidor (hbbs) e chave pública padrão | `libs/hbb_common/src/config.rs` |
 | Nome do app e organização | `libs/hbb_common/src/config.rs` |
+| WebSocket sempre ligado (`allow-websocket=Y` em `OVERWRITE_SETTINGS`) | `libs/hbb_common/src/config.rs` |
+| `wss` sempre que o servidor for domínio (o original exigia `api-server` em https) | `libs/hbb_common/src/websocket.rs` |
 | Chave que valida o `custom.txt` (a da RustDesk sai) | `src/common.rs` |
 | Nome, descrição e copyright do `.exe` | `Cargo.toml` |
 | Título da barra de abas | `flutter/lib/desktop/widgets/tabbar_widget.dart` |
@@ -54,6 +56,20 @@ Trocar o nome do app tem dois efeitos automáticos no próprio RustDesk:
 
 A chave **privada** do hbbs nunca entra no repositório: ela fica no servidor e no Bitwarden.
 A chave pública não é segredo, porque vai dentro do executável.
+
+## Servidor
+
+O cliente fala só por WebSocket (443), porque o servidor da Tecnomax fica atrás de um Cloudflare
+Tunnel, sem porta aberta. O hbbs do upstream não registra o ID por WebSocket; por isso o servidor é
+o fork [`tecnomax-sudo/rustdesk-server`](https://github.com/tecnomax-sudo/rustdesk-server)
+(branch `tecnomax`), que faz isso.
+
+## Build
+
+O workflow `.github/workflows/tecnomax-windows.yml` compila o Windows x64 a cada push em `tecnomax/`
+e gera o `.exe` portátil (artefato `tecnomax-connect-windows-x64`). Servidor e chave vêm das
+variáveis do repositório `TM_RENDEZVOUS_SERVER` e `TM_RS_PUB_KEY`. Os workflows do upstream estão
+desativados neste fork, para não rodarem o build noturno nem o CI completo.
 
 ## Ícones
 

@@ -96,6 +96,19 @@ def main():
     trocar(cfg, r'ORG: RwLock<String> = RwLock::new\("com\.carriez"\.to_owned\(\)\)',
            f'ORG: RwLock<String> = RwLock::new("{rust_str(org)}".to_owned())', dry)
 
+    # WebSocket fixo: o servidor da Tecnomax só é alcançável pelo túnel da Cloudflare (443),
+    # e OVERWRITE_SETTINGS tem prioridade sobre o que o usuário configurar
+    trocar(cfg, r'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
+           'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
+           '        ("allow-websocket".to_owned(), "Y".to_owned()),\n'
+           '    ]));', dry)
+    # wss sempre que o servidor for um domínio. No original, só com a opção api-server em
+    # https, que o nosso servidor não usa; sem isso o registro iria em ws:// sem criptografia
+    trocar("libs/hbb_common/src/websocket.rs",
+           r'let protocol = if is_domain \{\s*let api_server = Config::get_option\("api-server"\);\s*'
+           r'if api_server\.starts_with\("https"\) \{\s*"wss"\s*\} else \{\s*"ws"\s*\}\s*\} else \{',
+           'let protocol = if is_domain {\n        "wss"\n    } else {', dry)
+
     # Chave que valida o custom.txt: tira a da RustDesk
     trocar("src/common.rs", r'const KEY: &str = "5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=";',
            f'const KEY: &str = "{rust_str(chave_custom)}";', dry)
