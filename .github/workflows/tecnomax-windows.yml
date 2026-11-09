@@ -8,7 +8,12 @@ on:
   workflow_dispatch:
   push:
     branches: [tecnomax]
-    paths: ["tecnomax/**", ".github/workflows/tecnomax-windows.yml"]
+    paths: ["tecnomax/rebrand.py", "tecnomax/marca/**", ".github/workflows/tecnomax-windows.yml"]
+
+# um build novo na mesma branch cancela o que estiver rodando
+concurrency:
+  group: tecnomax-windows-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
