@@ -16,7 +16,8 @@ atualizado: 09/11/2026
   Tunnel `connect-teste.tecnomax.tech`, sem porta aberta.
 - **Sessão real aprovada**: a Dell controlou a YAGO-PC pelo túnel, com o cliente oficial configurado
   para o nosso servidor.
-- Workflow `tecnomax-windows.yml` criado para gerar o `.exe` do Tecnomax Connect.
+- Workflow `tecnomax-windows.yml` gera o `.exe` portátil do Tecnomax Connect (1º build verde, run 42656026923).
+- **1º Tecnomax Connect aprovado (09/11/2026 17:21 UTC):** abriu na YAGO-PC sem configurar nada, registrou só pela 443 (`wss`) e a Dell conectou nele pelo relay (`got paired` em 44 ms).
 
 ## Observação
 O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso o fork
