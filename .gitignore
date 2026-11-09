@@ -60,3 +60,6 @@ flutter/web/
 /third_party/libdrmtap/
 # Local git worktrees
 .worktrees/
+
+# Tecnomax: arquivos da marca usados pelo rebrand
+!tecnomax/marca/*.png
