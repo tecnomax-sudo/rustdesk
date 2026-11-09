@@ -26,6 +26,23 @@ atualizado: 09/11/2026
 - Ícones e logos em `tecnomax/marca/` (gerados do logo oficial); cores da interface no azul da marca.
 - `connect.tecnomax.tech` publicado no mesmo túnel (o `connect-teste` continua respondendo).
 - Workflow publica release com nome fixo `TecnomaxConnect-x64.exe` no disparo manual com "publicar".
+- **Site no ar (09/11/2026):** `www.tecnomax.tech/connect` (noindex, fora do sitemap durante o piloto) e
+  cartão na `/suporte`; o botão baixa `releases/latest/download/TecnomaxConnect-x64.exe`.
+- **Correções da noite de 09/11/2026 (release `connect-v2026.11.09-eacec60`):**
+  - nome técnico sem espaço (`TecnomaxConnect`, variável `TM_APP_ID`) para a instalação no Windows passar
+    na validação do upstream; o nome exibido segue "Tecnomax Connect" (commit `4f08cd4`). A pasta de
+    configuração mudou para `%APPDATA%\TecnomaxConnect`: quem usou a versão anterior ganha chave nova;
+  - tela "Servidor ID/Relay" escondida (`hide-server-settings=Y` em `BUILTIN_SETTINGS`, commit `eacec60`);
+  - conferido: SHA256 do download igual ao publicado; o portátil abre, registra por `wss` e mostra o título certo.
+- **Sessões reais pelo servidor do piloto** em 09/11/2026 (20:04 e 20:05 UTC), pelo relay, com encerramento normal.
+- **Compra do RustDesk Server Pro: decidida e anulada pelo CEO no mesmo dia (09/11/2026).** Segue o fork próprio; não propor de novo.
+
+## Aprendido
+- Dois apps na mesma máquina (RustDesk oficial + Tecnomax Connect) usam o **mesmo ID** (vem do hardware) com
+  chaves diferentes; o servidor atende quem registrou por último e a conexão falha de forma intermitente
+  ("Falha ao conectar ao servidor de rendezvous"). Não deixar os dois abertos apontando para o nosso servidor.
+- O hbbs descarta no arranque o relay cujo nome não resolve (`relay-servers=[]`). Depois de criar um nome no
+  DNS, conferir essa linha no log e reiniciar o hbbs se vier vazia.
 
 ## Observação
 O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso o fork
@@ -38,4 +55,9 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
 - 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).
 - 🟡 O `.exe` interno ainda se chama `rustdesk.exe`: o portátil extrai para `%LOCALAPPDATA%\rustdesk`, a mesma pasta do RustDesk oficial (a configuração fica separada, em `%APPDATA%\Tecnomax Connect`).
+- 🟡 Testar a **instalação completa** (botão Instalar, pede elevação) com a release `eacec60` e conferir
+  visualmente que a tela de servidor sumiu.
+- 🔵 A consulta de "online" da lista de recentes falha por WebSocket (`query onlines ... Connection reset`):
+  as bolinhas de online não acendem. Não impede conectar.
+- 🔵 O atalho do Menu Iniciar sai como "TecnomaxConnect" (nome técnico).
 - 🔵 macOS e Android: identificador do app e notarization ficam para depois do Windows.
