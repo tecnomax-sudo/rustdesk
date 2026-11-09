@@ -113,6 +113,12 @@ def main():
            f'ORG: RwLock<String> = RwLock::new("{rust_str(org)}".to_owned())', dry)
 
     # WebSocket fixo: o servidor da Tecnomax só é alcançável pelo túnel da Cloudflare (443),
+    # Esconde a tela "Servidor ID/Relay": o servidor e a chave já vêm gravados no programa,
+    # e o cliente que digitasse algo ali deixaria de achar o servidor da Tecnomax
+    trocar(cfg, r'pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
+           'pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
+           '        ("hide-server-settings".to_owned(), "Y".to_owned()),\n'
+           '    ]));', dry)
     # e OVERWRITE_SETTINGS tem prioridade sobre o que o usuário configurar
     trocar(cfg, r'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
            'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
