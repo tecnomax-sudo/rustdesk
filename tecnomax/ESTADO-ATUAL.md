@@ -39,6 +39,10 @@ atualizado: 09/11/2026
 - **Release `connect-v2026.11.09-0d501ee` (09/11/2026 21:34 UTC):** a instalação passa a renomear o exe
   copiado (`rustdesk.exe` → `TecnomaxConnect.exe`); antes falhava com "exit code 9059" e "O Windows não
   pode encontrar ...TecnomaxConnect.exe". SHA256 do download conferido. Instalação ainda não testada (pede elevação).
+- **Plano de atualização (09/11/2026):** `tecnomax/PLANO-ATUALIZACAO.md` — verificação a cada 30 dias
+  (tarefa agendada "Tecnomax Connect — verificação mensal de atualização", todo dia 9, 1ª em 09/12/2026;
+  só verifica e entrega relatório). Base em 09/11/2026: cliente na tag 1.5.3 (pré-lançamento; estável é a
+  1.5.1), servidor em 1.1.16 + 25 commits.
 
 ## Aprendido
 - Dois apps na mesma máquina (RustDesk oficial + Tecnomax Connect) usam o **mesmo ID** (vem do hardware) com
