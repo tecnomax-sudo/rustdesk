@@ -80,8 +80,15 @@ def main():
     copyright_ = env("TM_COPYRIGHT", obrigatorio=False,
                      padrao=f"{nome}, baseado no RustDesk (AGPL-3.0)")
 
-    if "RustDesk" in nome:
+    # Nome técnico (pastas, serviço, registro, pipes): o instalador do RustDesk recusa espaço
+    # desde 31/10/2026 (o nome entra sem aspas em comandos como reg add HKCR\.<nome>).
+    # O nome de exibição (com espaço) vai só para textos e janela.
+    nome_tecnico = env("TM_APP_ID", obrigatorio=False, padrao=nome.replace(" ", ""))
+
+    if "RustDesk" in nome or "RustDesk" in nome_tecnico:
         sys.exit("ERRO: o nome não pode conter 'RustDesk' (o app passaria por cliente oficial)")
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_-]*", nome_tecnico):
+        sys.exit(f"ERRO: TM_APP_ID '{nome_tecnico}' só pode ter letras, números, - e _")
 
     cfg = "libs/hbb_common/src/config.rs"
     # Servidor e chave padrão do cliente
@@ -92,7 +99,16 @@ def main():
     # Nome do app: também desliga a atualização automática pelo site da RustDesk
     # (is_custom_client) e troca "RustDesk" nos textos traduzidos (src/lang.rs)
     trocar(cfg, r'APP_NAME: RwLock<String> = RwLock::new\("RustDesk"\.to_owned\(\)\)',
-           f'APP_NAME: RwLock<String> = RwLock::new("{rust_str(nome)}".to_owned())', dry)
+           f'APP_NAME: RwLock<String> = RwLock::new("{rust_str(nome_tecnico)}".to_owned())', dry)
+    # Exibição com o nome bonito: textos traduzidos ("RustDesk" -> nome), título das janelas
+    # do Flutter (mainGetAppNameSync; o caminho de instalação usa a versão assíncrona, que
+    # segue com o nome técnico) e o nome em "Aplicativos instalados" (entre aspas no reg add)
+    trocar("src/lang.rs", r'let app_name = crate::get_app_name\(\);',
+           f'let app_name = "{rust_str(nome)}".to_owned();', dry)
+    trocar("src/flutter_ffi.rs", r'SyncReturn\(get_app_name\(\)\)',
+           f'SyncReturn("{rust_str(nome)}".to_owned())', dry)
+    trocar("src/platform/windows.rs", r'/v DisplayName /t REG_SZ /d \\"\{app_name\}\\"',
+           f'/v DisplayName /t REG_SZ /d \\"{rust_str(nome)}\\"', dry)
     trocar(cfg, r'ORG: RwLock<String> = RwLock::new\("com\.carriez"\.to_owned\(\)\)',
            f'ORG: RwLock<String> = RwLock::new("{rust_str(org)}".to_owned())', dry)
 
