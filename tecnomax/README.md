@@ -5,7 +5,7 @@ branch: tecnomax
 atualizado: 09/11/2026
 ---
 
-# Acesso remoto Tecnomax
+# Tecnomax Connect
 
 Cliente de acesso remoto da Tecnomax, construído sobre o [RustDesk](https://github.com/rustdesk/rustdesk).
 Este fork é público por exigência da licença AGPL-3.0: quem distribui uma versão modificada precisa
@@ -44,7 +44,7 @@ Trocar o nome do app tem dois efeitos automáticos no próprio RustDesk:
 
 | Variável | Obrigatória | Conteúdo |
 |---|---|---|
-| `TM_APP_NAME` | sim | nome do aplicativo (não pode conter "RustDesk") |
+| `TM_APP_NAME` | não | padrão `Tecnomax Connect`; não pode conter "RustDesk" |
 | `TM_RENDEZVOUS_SERVER` | sim | endereço do hbbs |
 | `TM_RS_PUB_KEY` | sim | conteúdo do `id_ed25519.pub` gerado pelo hbbs |
 | `TM_CUSTOM_PUB_KEY` | não | chave pública da Tecnomax para assinar `custom.txt`; sem ela, o `custom.txt` fica desativado |

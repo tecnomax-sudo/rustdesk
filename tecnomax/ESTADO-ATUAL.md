@@ -12,13 +12,14 @@ atualizado: 09/11/2026
   todas as trocas acham o alvo, uma segunda execução falha sem gravar nada, e um nome contendo
   "RustDesk" é recusado.
 
+- Nome do produto definido pelo CEO: **Tecnomax Connect** (grafia exata). Fica como padrão no `rebrand.py`.
+
 ## Observação
 O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso o fork
 `tecnomax-sudo/hbb_common` não é necessário hoje: ele só vira necessário se um dia for preciso
 mudar código do hbb_common além das constantes.
 
 ## Pendências
-- 🟠 **Nome do produto** (`TM_APP_NAME`): decisão do Yago.
 - 🟠 **Onde sobe o hbbs/hbbr**: precisa de IP público, das portas 21115–21119 (TCP) e 21116 (UDP),
   e de DNS sem proxy da Cloudflare. Não usar o labsai.
 - 🟠 **Certificado de assinatura de código (Windows)**: sem ele, o SmartScreen e o Defender barram o executável.

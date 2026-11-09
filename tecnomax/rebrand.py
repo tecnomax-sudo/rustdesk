@@ -9,7 +9,7 @@ Cada troca exige encontrar o texto original exatamente uma vez. Se o upstream
 mudar o arquivo, o script para com erro em vez de gerar um cliente pela metade.
 
 Variáveis de ambiente:
-  TM_APP_NAME          nome do aplicativo (obrigatório)
+  TM_APP_NAME          nome do aplicativo (padrão: Tecnomax Connect)
   TM_RENDEZVOUS_SERVER endereço do hbbs, ex.: remoto.exemplo.com (obrigatório)
   TM_RS_PUB_KEY        chave pública do hbbs, conteúdo do id_ed25519.pub (obrigatório)
   TM_CUSTOM_PUB_KEY    chave pública que valida o custom.txt (opcional; sem ela
@@ -72,7 +72,7 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
     dry =os.environ.get("TM_DRY_RUN") == "1"
-    nome = env("TM_APP_NAME")
+    nome = env("TM_APP_NAME", obrigatorio=False, padrao="Tecnomax Connect")
     servidor = env("TM_RENDEZVOUS_SERVER")
     chave = env("TM_RS_PUB_KEY")
     chave_custom = env("TM_CUSTOM_PUB_KEY", obrigatorio=False) or CHAVE_NULA
