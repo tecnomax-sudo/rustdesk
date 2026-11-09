@@ -16,6 +16,10 @@ Variáveis de ambiente:
                        o custom.txt fica desativado, pois a chave da RustDesk é removida)
   TM_ORG               identificador da organização (padrão: tech.tecnomax)
   TM_COPYRIGHT         texto de copyright do .exe
+  TM_COMPANY           empresa nos metadados do .exe (padrão: Tecnomax)
+  TM_APP_ID            nome técnico, sem espaço (padrão: TM_APP_NAME sem espaços)
+  TM_SEM_MODO_PRIVACIDADE=1  tira do pacote o "modo privacidade" por janela injetada
+                       (cópia do RuntimeBroker.exe do Windows + WindowInjection.dll)
   TM_DRY_RUN=1         só confere se todas as trocas acham o alvo, sem gravar
 
 Uso: python3 tecnomax/rebrand.py   (na raiz do repositório)
@@ -44,6 +48,13 @@ def env(nome, obrigatorio=True, padrao=None):
 
 def rust_str(s):
     return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def rc_str(s):
+    """Texto para um VALUE de arquivo .rc (aspas dobradas; só ASCII, por causa do codepage 1252)."""
+    if not s.isascii():
+        sys.exit(f"ERRO: texto com acento não pode ir para o Runner.rc: {s}")
+    return s.replace('"', '""')
 
 
 PENDENTES = {}  # arquivo -> texto já alterado, gravado só se todas as trocas acharem o alvo
@@ -79,6 +90,8 @@ def main():
     org = env("TM_ORG", obrigatorio=False, padrao="tech.tecnomax")
     copyright_ = env("TM_COPYRIGHT", obrigatorio=False,
                      padrao=f"{nome}, baseado no RustDesk (AGPL-3.0)")
+    empresa = env("TM_COMPANY", obrigatorio=False, padrao="Tecnomax")
+    sem_privacidade = os.environ.get("TM_SEM_MODO_PRIVACIDADE") == "1"
 
     # Nome técnico (pastas, serviço, registro, pipes): o instalador do RustDesk recusa espaço
     # desde 31/10/2026 (o nome entra sem aspas em comandos como reg add HKCR\.<nome>).
@@ -149,12 +162,42 @@ def main():
     trocar("Cargo.toml", r'^ProductName = "RustDesk"$', f'ProductName = "{rust_str(nome)}"', dry)
     trocar("Cargo.toml", r'^FileDescription = "RustDesk Remote Desktop"$',
            f'FileDescription = "{rust_str(nome)}"', dry)
+    trocar("Cargo.toml", r'^OriginalFilename = "rustdesk\.exe"$',
+           f'OriginalFilename = "{rust_str(nome_tecnico)}.exe"\nCompanyName = "{rust_str(empresa)}"', dry)
+
+    # Metadados do executável de verdade no build Flutter (o "runner"): é ele que fica instalado e
+    # que o antivírus examina. Sem isto, um arquivo sem assinatura se declarava "RustDesk", da
+    # "Purslane Tech Pte. Ltd." — identidade de outra empresa num binário que não é dela.
+    rc = "flutter/windows/runner/Runner.rc"
+    trocar(rc, r'VALUE "CompanyName", "[^"]*" "\\0"', f'VALUE "CompanyName", "{rc_str(empresa)}" "\\0"', dry)
+    trocar(rc, r'VALUE "FileDescription", "[^"]*" "\\0"', f'VALUE "FileDescription", "{rc_str(nome)}" "\\0"', dry)
+    trocar(rc, r'VALUE "InternalName", "[^"]*" "\\0"', f'VALUE "InternalName", "{rc_str(nome_tecnico)}" "\\0"', dry)
+    trocar(rc, r'VALUE "LegalCopyright", "[^"]*" "\\0"', f'VALUE "LegalCopyright", "{rc_str(copyright_)}" "\\0"', dry)
+    trocar(rc, r'VALUE "OriginalFilename", "[^"]*" "\\0"',
+           f'VALUE "OriginalFilename", "{rc_str(nome_tecnico)}.exe" "\\0"', dry)
+    trocar(rc, r'VALUE "ProductName", "[^"]*" "\\0"', f'VALUE "ProductName", "{rc_str(nome)}" "\\0"', dry)
 
     # Metadados do empacotador portátil (o .exe que o usuário baixa)
     pk = "libs/portable/Cargo.toml"
     trocar(pk, r'^LegalCopyright = ".*"$', f'LegalCopyright = "{rust_str(copyright_)}"', dry)
     trocar(pk, r'^ProductName = "RustDesk"$', f'ProductName = "{rust_str(nome)}"', dry)
     trocar(pk, r'^FileDescription = "RustDesk Remote Desktop"$', f'FileDescription = "{rust_str(nome)}"', dry)
+    trocar(pk, r'^OriginalFilename = "rustdesk\.exe"$',
+           f'OriginalFilename = "{rust_str(nome_tecnico)}-x64.exe"\nCompanyName = "{rust_str(empresa)}"', dry)
+
+    # Opcional (TM_SEM_MODO_PRIVACIDADE=1): tira o "modo privacidade" por janela injetada. Para
+    # escurecer a tela do cliente, o RustDesk copia o RuntimeBroker.exe do Windows para a pasta do
+    # app e injeta nele a WindowInjection.dll. Copiar um binário do sistema com outro nome e injetar
+    # código em outro processo é o comportamento que antivírus mais associam a malware, e o portátil
+    # faz essa cópia a cada extração. Com a opção ligada, nada é copiado nem empacotado (o workflow
+    # deixa a DLL de fora) e o modo privacidade simplesmente não liga.
+    if sem_privacidade:
+        trocar("libs/portable/src/main.rs",
+               r'    #\[cfg\(windows\)\]\n    win::copy_runtime_broker\(&dir\);\n', '', dry)
+        trocar("src/platform/windows.rs",
+               r'let main_exe = copy_raw_cmd\(src_exe, exe, path\)\?;\n\s+Ok\(format!\([\s\S]*?'
+               r'broker_exe = win_topmost_window::INJECTED_PROCESS_EXE,\n\s+\)\)',
+               'copy_raw_cmd(src_exe, exe, path)', dry)
 
     # Título fixo na barra de abas do Flutter
     trocar("flutter/lib/desktop/widgets/tabbar_widget.dart",

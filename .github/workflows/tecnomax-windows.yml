@@ -31,6 +31,11 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   TM_RENDEZVOUS_SERVER: ${{ vars.TM_RENDEZVOUS_SERVER }}
   TM_RS_PUB_KEY: ${{ vars.TM_RS_PUB_KEY }}
+  # Nome técnico (sem espaço): vira o nome do executável, da pasta de instalação e do serviço.
+  TM_APP_ID: TecnomaxConnect
+  # "1" tira do pacote o modo privacidade por janela injetada (ver tecnomax/rebrand.py).
+  # Liga/desliga pela variável do repositório, sem mexer no código.
+  TM_SEM_MODO_PRIVACIDADE: ${{ vars.TM_SEM_MODO_PRIVACIDADE }}
 
 jobs:
   generate-bridge:
@@ -128,8 +133,14 @@ jobs:
         run: |
           python3 .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
+          # O executável sai do Flutter como rustdesk.exe. O código do RustDesk supõe que ele tem o
+          # nome do app (instalação, taskkill, serviço portátil), e o próprio upstream renomeia a
+          # cópia antes de empacotar clientes personalizados. Com o nome certo, o portátil também
+          # extrai em %LOCALAPPDATA%\tecnomaxconnect, separado do RustDesk oficial.
+          mv ./rustdesk/rustdesk.exe "./rustdesk/$($env:TM_APP_ID).exe"
 
       - name: Download RustDeskTempTopMostWindow artifacts
+        if: ${{ env.TM_SEM_MODO_PRIVACIDADE != '1' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: topmostwindow-artifacts-x64
@@ -147,11 +158,16 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/rustdesk.exe
+          python3 ./generate.py -f ../../rustdesk/ -o . -e "../../rustdesk/${TM_APP_ID}.exe"
           popd
           mkdir -p ./saida
           mv ./target/release/rustdesk-portable-packer.exe "./saida/TecnomaxConnect-${GITHUB_SHA::7}-x64.exe"
-          sha256sum ./saida/*.exe
+          # Mesmo programa em .zip (pasta pronta, sem autoextração): alternativa para quando o
+          # antivírus implica com o .exe que se descompacta sozinho.
+          mv ./rustdesk "./${TM_APP_ID}"
+          7z a -tzip "./saida/TecnomaxConnect-${GITHUB_SHA::7}-x64.zip" "./${TM_APP_ID}" > /dev/null
+          mv "./${TM_APP_ID}" ./rustdesk
+          sha256sum ./saida/*
 
       - name: Upload exe
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -159,6 +175,32 @@ jobs:
           name: tecnomax-connect-windows-x64
           path: saida
           if-no-files-found: error
+
+      # Experimental: instalador .msi (formato que os antivírus tratam melhor que autoextraível).
+      # Sai só como artefato do build, não vai para a release, e uma falha aqui não derruba o build.
+      - name: Add MSBuild to PATH
+        continue-on-error: true
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
+
+      - name: Build msi (experimental)
+        continue-on-error: true
+        run: |
+          pushd ./res/msi
+          python preprocess.py --arp -d ../../rustdesk --app-name "$env:TM_APP_ID" -m "Tecnomax"
+          nuget restore msi.sln
+          msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
+          $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
+          popd
+          mkdir ./saida-msi
+          mv $msi.FullName "./saida-msi/TecnomaxConnect-x64.msi"
+
+      - name: Upload msi (experimental)
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tecnomax-connect-windows-x64-msi-experimental
+          path: saida-msi
+          if-no-files-found: warn
 
   # Release pública: o site aponta para .../releases/latest/download/TecnomaxConnect-x64.exe,
   # então o nome do arquivo é fixo. Só roda no disparo manual com "publicar".
@@ -180,7 +222,9 @@ jobs:
           set -e
           cd saida
           mv TecnomaxConnect-*-x64.exe TecnomaxConnect-x64.exe
+          mv TecnomaxConnect-*-x64.zip TecnomaxConnect-x64.zip
           sha256sum TecnomaxConnect-x64.exe > TecnomaxConnect-x64.exe.sha256
+          sha256sum TecnomaxConnect-x64.zip > TecnomaxConnect-x64.zip.sha256
           DATA=$(date -u +%Y.%m.%d)
           CURTO=${GITHUB_SHA::7}
           TAG="connect-v${DATA}-${CURTO}"
@@ -188,7 +232,8 @@ jobs:
           Tecnomax Connect para Windows (x64), versão ${DATA}.
 
           - Servidor: ${TM_RENDEZVOUS_SERVER}
-          - SHA256: $(cut -d' ' -f1 TecnomaxConnect-x64.exe.sha256)
+          - SHA256 do .exe: $(cut -d' ' -f1 TecnomaxConnect-x64.exe.sha256)
+          - SHA256 do .zip (mesmo programa, sem autoextração): $(cut -d' ' -f1 TecnomaxConnect-x64.zip.sha256)
           - Executável sem assinatura de código: o Windows avisa "editor desconhecido" ao abrir.
 
           Baseado no RustDesk (AGPL-3.0). Código-fonte desta versão:
@@ -196,5 +241,6 @@ jobs:
           e do servidor: https://github.com/tecnomax-sudo/rustdesk-server/tree/tecnomax
           EOF
           gh release create "$TAG" TecnomaxConnect-x64.exe TecnomaxConnect-x64.exe.sha256 \
+            TecnomaxConnect-x64.zip TecnomaxConnect-x64.zip.sha256 \
             -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Tecnomax Connect ${DATA}" --notes-file notas.md --latest
