@@ -58,6 +58,11 @@ atualizado: 10/11/2026
   automático, atalhos, desinstalador, metadados "Tecnomax"); serviço registrado no hbbs (ID 287322631); a Dell
   conectou e o Yago viu a tela (hbbr `got paired` 01:22:56 UTC, 64 ms). O botão da `/connect` baixa este arquivo
   (hash conferido pelo link `releases/latest/download`). O pré-lançamento `-teste` ficou publicado como histórico.
+- **Atualização por cima testada (10/11/2026 ~01:27 UTC):** na Dell, com a versão anterior instalada, o `.exe`
+  novo mostrou "Your installation is lower version" → "Click to upgrade" (compara `BuildDate` do registro com o
+  do exe em execução e roda `update_me`, copiando o próprio arquivo; nada é baixado). A Dell voltou a registrar
+  no hbbs às 01:27:43 com o mesmo ID (277858512). O aviso "nova versão do RustDesk" (que baixa do site da
+  RustDesk) não aparece no Connect: `is_custom_client()` é verdadeiro porque o `APP_NAME` foi trocado.
 - Túnel do CT 120 em **HTTP/2** desde 10/11/2026 00:19 UTC (QUIC caía; cópia em `config.yml.bak-quic`).
 - Decisões de 09/11/2026: conexão direta (WebRTC) fica para depois; servidor fica no labsai por ora;
   preparar pedido à SignPath (rascunho em `ANTIVIRUS-FALSO-POSITIVO.md`); quem detecta é o Defender.
