@@ -34,8 +34,8 @@ Passo a passo do envio (feito pelo Yago, com a conta Microsoft dele):
 |---|---|
 | Produto | Tecnomax Connect |
 | Arquivo | `TecnomaxConnect-x64.exe` (e `TecnomaxConnect-x64.zip`, mesmo programa sem autoextração) |
-| Versão / release | 🟡 preencher com a release enviada (ex.: `connect-v2026.11.09-0d501ee`) |
-| SHA256 | 🟡 preencher com o da release enviada (`0d501ee`: `c33b0e25040f24e156dabd54b53c7b85ab17a1d15d0c316f28133cae9b91e42b`) |
+| Versão / release | 🟡 preencher com a release enviada (ex.: `connect-v2026.11.10-7e69e13`) |
+| SHA256 | 🟡 preencher com o da release enviada (`7e69e13`, oficial desde 10/11/2026: `.exe` `5adfb739e7ae32bec8c100de38af877d446e54f5ae25362452aa0b5ba02b6b24`, `.zip` `52c097414fc74dfb9dbcd0caae7bd8848c26e25c239c872b7050d6e08da0ac46`) |
 | Download oficial | https://www.tecnomax.tech/connect |
 | Código-fonte | https://github.com/tecnomax-sudo/rustdesk (branch `tecnomax`) |
 | Releases e hashes | https://github.com/tecnomax-sudo/rustdesk/releases |

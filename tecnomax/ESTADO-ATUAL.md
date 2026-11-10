@@ -1,6 +1,6 @@
 ---
 projeto: acesso-remoto-tecnomax
-atualizado: 09/11/2026
+atualizado: 10/11/2026
 ---
 
 # Estado atual
@@ -52,6 +52,12 @@ atualizado: 09/11/2026
   MSI experimental como artefato e **modo privacidade removido** (variável `TM_SEM_MODO_PRIVACIDADE=1`,
   decisão do CEO). Publicado como **pré-lançamento** `connect-v2026.11.10-7e69e13-teste` (abre e mostra a
   janela; instalação não testada). O `latest` segue `connect-v2026.11.09-0d501ee`.
+- **Release `connect-v2026.11.10-7e69e13` é a oficial (latest) desde 10/11/2026 01:24 UTC.** Mesmos arquivos do
+  pré-lançamento `-teste` (SHA256 do `.exe` `5adfb739…6b24`), sem build novo (o Actions está bloqueado). Testado na
+  ialabs: Defender sem detecção (assinaturas 1.463.217.0); instalação completa ok (pasta, serviço `TecnomaxConnect`
+  automático, atalhos, desinstalador, metadados "Tecnomax"); serviço registrado no hbbs (ID 287322631); a Dell
+  conectou e o Yago viu a tela (hbbr `got paired` 01:22:56 UTC, 64 ms). O botão da `/connect` baixa este arquivo
+  (hash conferido pelo link `releases/latest/download`). O pré-lançamento `-teste` ficou publicado como histórico.
 - Túnel do CT 120 em **HTTP/2** desde 10/11/2026 00:19 UTC (QUIC caía; cópia em `config.yml.bak-quic`).
 - Decisões de 09/11/2026: conexão direta (WebRTC) fica para depois; servidor fica no labsai por ora;
   preparar pedido à SignPath (rascunho em `ANTIVIRUS-FALSO-POSITIVO.md`); quem detecta é o Defender.
@@ -82,7 +88,6 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
   access issues, tipo "erros/problemas de Actions"); resposta vai para `tecnomax@tecnomax.cloud`. Conta
   gratuita ("Technical support not included"). Provável filtro automático: conta criada em 04/11/2026 e vários
   builds Windows de ~40 min em 09/11/2026 (inferência, não confirmada).
-- 🟡 Testar a instalação do pré-lançamento `7e69e13-teste` e promover a `latest`.
 - 🟠 **Servidor depois do piloto**: o CT 120 fica no labsai, que é laboratório, está na rede do RI e
   tem histórico de travar a placa de rede. Migrar ao fim do piloto (continua pelo túnel, sem porta aberta).
 - 🟠 Sem assinatura de código (decisão do CEO): orientar o cliente de teste sobre o aviso do Windows.
@@ -93,5 +98,5 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
   visualmente que a tela de servidor sumiu.
 - 🔵 A consulta de "online" da lista de recentes falha por WebSocket (`query onlines ... Connection reset`):
   as bolinhas de online não acendem. Não impede conectar.
-- 🔵 O atalho do Menu Iniciar sai como "TecnomaxConnect" (nome técnico).
+- 🔵 O atalho do Menu Iniciar e o "Editor" no desinstalador saem como "TecnomaxConnect" (nome técnico).
 - 🔵 macOS e Android: identificador do app e notarization ficam para depois do Windows.
