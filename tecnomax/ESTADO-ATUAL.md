@@ -77,6 +77,11 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
   foi cancelado na limpeza final e todo disparo responde "Actions has been disabled for this repository",
   embora a configuração do repo mostre ligado. Sem isso não há build novo. O Yago precisa ver o e-mail/aviso
   do GitHub na conta `tecnomax-sudo` e, se for o caso, abrir chamado no suporte.
+  **10/11/2026 ~01:15 UTC:** novo disparo de teste ainda recusado (422); nenhuma notificação na conta e
+  nenhum e-mail localizado. **Chamado aberto no suporte do GitHub: #4979864** (Repositories → Repository
+  access issues, tipo "erros/problemas de Actions"); resposta vai para `tecnomax@tecnomax.cloud`. Conta
+  gratuita ("Technical support not included"). Provável filtro automático: conta criada em 04/11/2026 e vários
+  builds Windows de ~40 min em 09/11/2026 (inferência, não confirmada).
 - 🟡 Testar a instalação do pré-lançamento `7e69e13-teste` e promover a `latest`.
 - 🟠 **Servidor depois do piloto**: o CT 120 fica no labsai, que é laboratório, está na rede do RI e
   tem histórico de travar a placa de rede. Migrar ao fim do piloto (continua pelo túnel, sem porta aberta).
