@@ -9,6 +9,19 @@ atualizado: 09/11/2026
 Material pronto para pedir a reanálise do Tecnomax Connect quando um antivírus bloquear o programa.
 **Quem envia é o Yago** (os formulários pedem conta ou identificação do responsável).
 
+## Caso atual (09/11/2026): Microsoft Defender
+
+O Yago informou que quem bloqueou foi o **Microsoft Defender**. 🟡 Falta o nome exato da detecção
+(Segurança do Windows → Proteção contra vírus e ameaças → Histórico de proteção) e em qual arquivo.
+
+Passo a passo do envio (feito pelo Yago, com a conta Microsoft dele):
+1. Abrir https://www.microsoft.com/en-us/wdsi/filesubmission e entrar como **Software developer**.
+2. Enviar o arquivo da release em uso (`TecnomaxConnect-x64.exe`; se a detecção for no programa
+   instalado, enviar também o `.zip`).
+3. Marcar "Incorrectly detected as malware/malicious" e informar o nome da detecção.
+4. Colar o texto em inglês deste arquivo, com o SHA256 da release enviada.
+5. Guardar o número do envio. A resposta costuma vir por e-mail; cada versão nova pode precisar de novo envio.
+
 ## Antes de enviar
 
 1. Anotar **qual antivírus** bloqueou e **o nome exato da detecção** (ex.: `Trojan:Win32/Wacatac.B!ml`),
@@ -120,3 +133,26 @@ outros pontos, licença OSI sem componente proprietário, política de assinatur
 projeto, autenticação em dois fatores e, para versão modificada de outro projeto, que o upstream
 publique builds assinados e que o fork seja visível. O certificado sai em nome da SignPath Foundation
 (é ela que aparece como editor) e a aprovação é deles. 🟡 Não solicitado.
+
+### Rascunho do pedido à SignPath Foundation (decisão do Yago em 09/11/2026: preparar; ele envia)
+
+🟡 Conferir os campos do formulário em https://signpath.org/apply antes de enviar. Pontos a resolver antes:
+a política exige que o projeto seja de código aberto com licença aprovada (AGPL-3.0, ok), que os
+builds sejam feitos em CI a partir do repositório público e que haja uma página de política de
+assinatura de código no repositório. O certificado sai em nome da SignPath Foundation. Um fork com
+marca própria pode ser recusado: a aprovação é incerta.
+
+```
+Project name: Tecnomax Connect
+Repository: https://github.com/tecnomax-sudo/rustdesk (branch "tecnomax")
+License: AGPL-3.0 (fork of RustDesk, https://github.com/rustdesk/rustdesk)
+Homepage: https://www.tecnomax.tech/connect
+Maintainer: Yago Salbego Ramos — Tecnomax (Horizontina/RS, Brazil)
+Description: Remote support client for Windows, a rebranded build of the open-source RustDesk
+client preconfigured for our self-hosted server. All changes are applied at build time by a public
+script (tecnomax/rebrand.py) and the binaries are built by a public GitHub Actions workflow
+(.github/workflows/tecnomax-windows.yml). Releases are published with SHA256 checksums.
+Why signing: unsigned builds trigger SmartScreen warnings and antivirus false positives for the
+small businesses we support.
+Artifacts to sign: TecnomaxConnect-x64.exe (portable launcher) and TecnomaxConnect.exe (application).
+```

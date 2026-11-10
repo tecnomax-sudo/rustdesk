@@ -43,6 +43,18 @@ atualizado: 09/11/2026
   (tarefa agendada "Tecnomax Connect — verificação mensal de atualização", todo dia 9, 1ª em 09/12/2026;
   só verifica e entrega relatório). Base em 09/11/2026: cliente na tag 1.5.3 (pré-lançamento; estável é a
   1.5.1), servidor em 1.1.16 + 25 commits.
+- **Tecnomax Connect é o acesso remoto oficial (decisão do CEO, 09/11/2026):** site em produção na versão
+  `8625218d` — `/suporte` só com o Connect (AnyDesk removido de vez), `/connect` indexável e com a
+  pergunta "Preciso instalar?", lista de tecnologias trocada. Rollback: `561966a4` (com AnyDesk em
+  "Outros sistemas") ou `810f8864` (piloto).
+- **Pacote mais limpo para antivírus (commit `7e69e139c`):** metadados Tecnomax no programa instalado, exe
+  interno `TecnomaxConnect.exe` (portátil extrai em `%LOCALAPPDATA%	ecnomaxconnect`), `.zip` na release,
+  MSI experimental como artefato e **modo privacidade removido** (variável `TM_SEM_MODO_PRIVACIDADE=1`,
+  decisão do CEO). Publicado como **pré-lançamento** `connect-v2026.11.10-7e69e13-teste` (abre e mostra a
+  janela; instalação não testada). O `latest` segue `connect-v2026.11.09-0d501ee`.
+- Túnel do CT 120 em **HTTP/2** desde 10/11/2026 00:19 UTC (QUIC caía; cópia em `config.yml.bak-quic`).
+- Decisões de 09/11/2026: conexão direta (WebRTC) fica para depois; servidor fica no labsai por ora;
+  preparar pedido à SignPath (rascunho em `ANTIVIRUS-FALSO-POSITIVO.md`); quem detecta é o Defender.
 
 ## Aprendido
 - Dois apps na mesma máquina (RustDesk oficial + Tecnomax Connect) usam o **mesmo ID** (vem do hardware) com
@@ -61,6 +73,11 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
 `tecnomax-sudo/hbb_common` não é necessário hoje.
 
 ## Pendências
+- 🔴 **GitHub Actions desativado no repositório pelo GitHub** (10/11/2026 ~00:18 UTC): o run 42721997868
+  foi cancelado na limpeza final e todo disparo responde "Actions has been disabled for this repository",
+  embora a configuração do repo mostre ligado. Sem isso não há build novo. O Yago precisa ver o e-mail/aviso
+  do GitHub na conta `tecnomax-sudo` e, se for o caso, abrir chamado no suporte.
+- 🟡 Testar a instalação do pré-lançamento `7e69e13-teste` e promover a `latest`.
 - 🟠 **Servidor depois do piloto**: o CT 120 fica no labsai, que é laboratório, está na rede do RI e
   tem histórico de travar a placa de rede. Migrar ao fim do piloto (continua pelo túnel, sem porta aberta).
 - 🟠 Sem assinatura de código (decisão do CEO): orientar o cliente de teste sobre o aviso do Windows.
