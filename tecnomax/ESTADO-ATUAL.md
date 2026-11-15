@@ -1,9 +1,26 @@
 ---
 projeto: acesso-remoto-tecnomax
-atualizado: 10/11/2026
+atualizado: 15/11/2026
 ---
 
 # Estado atual
+
+## Servidor de produção (desde 15/11/2026) — leia primeiro
+- **O servidor saiu do CT 120 (labsai) e está na VPS Hostinger `vps-dk-qr`** (`ssh vps-dk-qr`, Ubuntu 24.04,
+  Campinas), decisão do CEO em 15/11/2026. É a mesma VPS da ponte QR do WhatsApp da DK: 🟠 risco aceito de
+  produto da Tecnomax dividir máquina com estrutura de cliente (reinício ou comprometimento de uma afeta a outra).
+- Isolado da ponte da DK: usuário de sistema `tcconnect` (sem shell), tudo em `/opt/tecnomax-connect/`
+  (`bin/` hbbs 1.1.17 do fork + hbbr + cloudflared 2026.10.7, mesmos SHA256 do CT 120; `dados/` chave
+  `id_ed25519` e banco; `tunel/` credencial e `config.yml`). Serviços systemd `tecnomax-connect-hbbs`,
+  `-hbbr` e `-tunel` (com `ProtectSystem=strict`). Logs: `journalctl -u tecnomax-connect-*`.
+- **Mesma chave do hbbs** (pública `vTVBcMvy…o7M=`) e **mesmo túnel** `connect-teste`
+  (`cdf3d124-…`): nenhum cliente precisou de build novo e o DNS não mudou. Métricas do cloudflared em
+  `127.0.0.1:20242` (a `20241` é do túnel da ponte da DK). ufw da VPS segue só com a 22: nada exposto.
+- Virada em 15/11/2026: CT parado 14:57:55 UTC, VPS no ar 14:58:04 UTC (~10 s). Os 4 IDs ativos
+  registraram de novo às 14:58:23 UTC. O banco do CT **não** foi copiado (falha no comando de cópia); o
+  hbbs começou com banco novo e os clientes se registraram sozinhos. Cópia do banco antigo segue no CT 120.
+- **CT 120 desligado como plano de volta** (serviços `rustdesk-hbbs/hbbr` e `cloudflared` desativados,
+  `onboot=0`). Para voltar: parar os 3 serviços na VPS, `systemctl enable --now` dos 3 no CT.
 
 ## Feito (09/11/2026)
 - Decisão do CEO: **fork próprio**, em vez do RustDesk Server Pro.
@@ -93,8 +110,11 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
   access issues, tipo "erros/problemas de Actions"); resposta vai para `tecnomax@tecnomax.cloud`. Conta
   gratuita ("Technical support not included"). Provável filtro automático: conta criada em 04/11/2026 e vários
   builds Windows de ~40 min em 09/11/2026 (inferência, não confirmada).
-- 🟠 **Servidor depois do piloto**: o CT 120 fica no labsai, que é laboratório, está na rede do RI e
-  tem histórico de travar a placa de rede. Migrar ao fim do piloto (continua pelo túnel, sem porta aberta).
+- ✅ ~~Servidor depois do piloto~~: migrado para a VPS `vps-dk-qr` em 15/11/2026 (ver o topo).
+- 🟠 Servidor na mesma VPS da ponte QR da DK (decisão do CEO de 15/11/2026, risco aceito).
+- 🟡 VPS sem backup semanal da Hostinger (decisão anterior, da DK): a chave `id_ed25519` precisa estar no
+  Bitwarden — sem ela, todo cliente instalado exige build novo.
+- 🔵 Cota mensal de tráfego do plano KVM 1 não conferida (piloto gasta ~15 GB/mês, estimado de 6 dias).
 - 🟠 Sem assinatura de código (decisão do CEO): orientar o cliente de teste sobre o aviso do Windows.
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
 - 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).

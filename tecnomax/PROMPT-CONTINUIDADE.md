@@ -26,12 +26,13 @@ Estado em 09/11/2026 (noite):
 - Release oficial (latest): connect-v2026.11.09-0d501ee — abre, instala e conecta (confirmado pelo Yago).
 - Pré-lançamento connect-v2026.11.10-7e69e13-teste: correções para antivírus (metadados Tecnomax, exe
   interno TecnomaxConnect.exe, .zip, sem modo privacidade). Abre; INSTALAÇÃO NÃO TESTADA.
-- Servidor: CT 120 no labsai (`ssh labsai`, `pct exec 120`), hbbs/hbbr do nosso fork atrás do túnel
+- Servidor (desde 15/11/2026): VPS `vps-dk-qr` (`ssh vps-dk-qr`, `/opt/tecnomax-connect`, serviços
+  `tecnomax-connect-*`), hbbs/hbbr do nosso fork atrás do túnel
   Cloudflare connect.tecnomax.tech, agora em HTTP/2.
 
 Decisões do CEO que NÃO se reabrem: fork próprio (compra do RustDesk Server Pro anulada); só
-Cloudflare, sem porta aberta; sem compra de certificado de assinatura; servidor fica no labsai por
-ora; conexão direta (WebRTC) fica para depois; modo privacidade fora do pacote; AnyDesk fora do site.
+Cloudflare, sem porta aberta; sem compra de certificado de assinatura; servidor na VPS da ponte QR da DK desde
+15/11/2026; conexão direta (WebRTC) fica para depois; modo privacidade fora do pacote; AnyDesk fora do site.
 
 Pendências, em ordem:
 1. 🔴 O GitHub desativou o Actions no repositório tecnomax-sudo/rustdesk (10/11/2026 ~00:18 UTC):
@@ -42,7 +43,7 @@ Pendências, em ordem:
 3. 🟡 Defender: pedir ao Yago o nome exato da detecção e o arquivo; ele envia o falso positivo à
    Microsoft e, se quiser, o pedido à SignPath (textos prontos no ANTIVIRUS-FALSO-POSITIVO.md).
 4. 🟡 Teste de conexão com a máquina controlada FORA de RDP (em RDP minimizado a tela vem preta: não é bug).
-5. 🟡 Confirmar se a chave privada do hbbs (id_ed25519, só no CT 120) está no Bitwarden.
+5. 🟡 Confirmar se a chave privada do hbbs (id_ed25519, na VPS em /opt/tecnomax-connect/dados) está no Bitwarden.
 6. 🔵 Bolinhas de "online" não acendem (query onlines falha por WebSocket); atalho do Menu Iniciar
    sai "TecnomaxConnect"; hbbs fecha sessão WS ociosa após 40 s; comparar quedas do túnel em HTTP/2.
 7. Verificação mensal de atualização: a tarefa agendada ficou na YAGO-PC (dia 9, 09:00). Se esta
@@ -53,6 +54,6 @@ antes de concluir; o rebrand só roda no CI (nunca na cópia de trabalho princip
 texto literal e exige casar exatamente uma vez); push em tecnomax/rebrand.py ou no workflow dispara
 build e cancela o que estiver rodando; deploy público do site pede ok uma vez; segredo só no
 Bitwarden; ao encerrar, atualizar ESTADO-ATUAL.md e a memória.
-Comece conferindo o estado real (git log dos três repositórios, `gh release list`, serviços do CT 120)
+Comece conferindo o estado real (git log dos três repositórios, `gh release list`, serviços tecnomax-connect-* na VPS)
 e me diga em poucas linhas o que encontrou antes de agir.
 ```

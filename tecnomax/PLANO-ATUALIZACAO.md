@@ -18,7 +18,7 @@ São duas peças, atualizadas em separado:
 | Peça | Repositório nosso | Original (upstream) | Onde roda |
 |---|---|---|---|
 | **Cliente** (o programa que o cliente baixa) | `tecnomax-sudo/rustdesk`, branch `tecnomax` | `rustdesk/rustdesk` | PCs com Windows |
-| **Servidor** (hbbs = "central telefônica", hbbr = "ponte" da sessão) | `tecnomax-sudo/rustdesk-server`, branch `tecnomax` | `rustdesk/rustdesk-server` | CT 120 no labsai |
+| **Servidor** (hbbs = "central telefônica", hbbr = "ponte" da sessão) | `tecnomax-sudo/rustdesk-server`, branch `tecnomax` | `rustdesk/rustdesk-server` | VPS `vps-dk-qr` (Hostinger), desde 15/11/2026 |
 
 ## 1. Retrato em 09/11/2026
 
@@ -46,7 +46,7 @@ versões** no servidor. Foi o que estava no ar no dia em que o fork nasceu. Não
 - Cliente: `.github/workflows/tecnomax-windows.yml`. Roda `tecnomax/rebrand.py` e compila. Só publica
   release quando disparado à mão com `publicar=true`.
 - Servidor: `.github/workflows/tecnomax-build.yml`. Roda os testes, compila `hbbs` e `hbbr` e entrega
-  como artefato. **Não há instalação automática** no CT 120: os binários são copiados à mão.
+  como artefato. **Não há instalação automática** na VPS: os binários são copiados à mão.
 
 ## 3. Regra de base: sempre uma versão estável com nome
 
@@ -168,16 +168,16 @@ entrega um relatório. Ela **não** publica nada, **não** mexe no servidor e **
    dentro de um arquivo do original. Se o original passar a oferecer registro por WebSocket por conta
    própria, a nossa mudança sai e passamos a usar a deles.
 2. O workflow `tecnomax-build.yml` roda os testes e compila. Sem teste verde, não segue.
-3. No CT 120, **antes de trocar**:
-   - snapshot do container no Proxmox (`pct snapshot 120 antes-<versão>`);
-   - cópia de `/var/lib/rustdesk-server/id_ed25519` e `id_ed25519.pub`. **Essa chave é a identidade do
-     servidor: está gravada dentro de todo `.exe` distribuído. Se ela se perder, todos os clientes param
-     de confiar no servidor e precisam baixar o programa de novo.** A cópia da chave privada vai para o
-     Bitwarden, nunca para arquivo solto, git ou chat;
-   - guardar os binários atuais: `cp /usr/local/bin/hbbs /usr/local/bin/hbbs.anterior` (idem `hbbr`).
-4. Baixar o artefato do run, conferir o SHA256, copiar para `/usr/local/bin/`, reiniciar
-   `rustdesk-hbbr` e `rustdesk-hbbs`.
-5. Conferir no log (`/var/log/rustdesk-server/hbbs.log`): linha `relay-servers=["connect.tecnomax.tech"]`
+3. Na VPS `vps-dk-qr` (servidor desde 15/11/2026; antes era o CT 120 do labsai), **antes de trocar**:
+   - conferir que a chave `/opt/tecnomax-connect/dados/id_ed25519` (e `.pub`) está no Bitwarden. **Essa
+     chave é a identidade do servidor: está gravada dentro de todo `.exe` distribuído. Se ela se perder,
+     todos os clientes param de confiar no servidor e precisam baixar o programa de novo.** A cópia da
+     chave privada vai para o Bitwarden, nunca para arquivo solto, git ou chat. A VPS não tem snapshot
+     nem backup semanal da Hostinger;
+   - guardar os binários atuais: `cp /opt/tecnomax-connect/bin/hbbs /opt/tecnomax-connect/bin/hbbs.anterior` (idem `hbbr`).
+4. Baixar o artefato do run, conferir o SHA256, copiar para `/opt/tecnomax-connect/bin/`, reiniciar
+   `tecnomax-connect-hbbr` e `tecnomax-connect-hbbs`.
+5. Conferir no log (`journalctl -u tecnomax-connect-hbbs`): linha `relay-servers=["connect.tecnomax.tech"]`
    (se vier vazia, reiniciar o hbbs), `Listening on websocket`, e as máquinas voltando a registrar
    (`WS peer session from ...`).
 6. Sessão de teste entre duas máquinas.
@@ -232,19 +232,19 @@ Duas máquinas físicas (ou VM pelo console do Proxmox), **nenhuma em RDP**.
 |---|---|
 | Release nova do cliente com defeito | As releases antigas continuam no GitHub. Apagar (ou marcar como pré-lançamento) a release ruim: `releases/latest` volta a apontar para a anterior e a página `/connect` passa a baixar a anterior, sem mexer no site. `gh release edit <tag> --repo tecnomax-sudo/rustdesk --prerelease` |
 | Quem já instalou a versão ruim | Baixar a anterior pela página e instalar por cima |
-| Servidor novo com defeito | `cp /usr/local/bin/hbbs.anterior /usr/local/bin/hbbs` (idem `hbbr`) e reiniciar os dois serviços; se não bastar, `pct rollback 120 antes-<versão>` |
+| Servidor novo com defeito | Na VPS: `cp /opt/tecnomax-connect/bin/hbbs.anterior /opt/tecnomax-connect/bin/hbbs` (idem `hbbr`) e reiniciar os dois serviços |
 | Branch `tecnomax` com merge ruim | `git revert -m 1 <commit do merge>` e novo build |
 
 ## 10. Riscos
 
-- 🔴 **Chave do servidor** (`id_ed25519`) existe só no CT 120. Perda = todos os clientes precisam
+- 🔴 **Chave do servidor** (`id_ed25519`) existe na VPS e no CT 120 desligado. Perda = todos os clientes precisam
   reinstalar. Cópia no Bitwarden antes de qualquer troca. 🟡 confirmar se a cópia já existe.
 - 🟠 **Uma pessoa só executa tudo.** Se o ciclo cair numa semana de implantação presencial, a
   verificação automática ainda entrega o relatório; a atualização em si espera, salvo caso 🔴.
 - 🟠 **Sem assinatura de código** (decisão do CEO): cada `.exe` novo é um arquivo "nunca visto" para o
   Windows e para os antivírus. Publicar release só quando houver motivo — não a cada verificação.
-- 🟠 **Servidor no labsai** (laboratório, com histórico de travar a placa de rede). Enquanto o piloto
-  estiver lá, snapshot antes de toda troca.
+- 🟠 **Servidor na VPS da ponte QR da DK** (`vps-dk-qr`, desde 15/11/2026, decisão do CEO): reinício ou
+  problema numa afeta a outra. Avisar antes de reiniciar a VPS por causa do Connect.
 - 🟡 **Sem atualização automática do cliente.** Quem baixou continua na versão que baixou. Em correção
   de segurança, é preciso avisar os clientes para baixar de novo. 🟡 decidir se e como avisar.
 - 🟡 **O workflow é cópia de um pedaço do original.** Se eles mudarem o jeito de compilar e nós não
