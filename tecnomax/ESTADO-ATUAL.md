@@ -19,8 +19,13 @@ atualizado: 15/11/2026
 - Virada em 15/11/2026: CT parado 14:57:55 UTC, VPS no ar 14:58:04 UTC (~10 s). Os 4 IDs ativos
   registraram de novo às 14:58:23 UTC. O banco do CT **não** foi copiado (falha no comando de cópia); o
   hbbs começou com banco novo e os clientes se registraram sozinhos. Cópia do banco antigo segue no CT 120.
-- **CT 120 desligado como plano de volta** (serviços `rustdesk-hbbs/hbbr` e `cloudflared` desativados,
-  `onboot=0`). Para voltar: parar os 3 serviços na VPS, `systemctl enable --now` dos 3 no CT.
+- **Sessões reais pela VPS aprovadas pelo Yago em 15/11/2026** (Dell → outra máquina; hbbr `got paired`
+  às 12:09, 12:14 e 12:14 BRT). Serviços sem reinício, túnel sem erro.
+- **CT 120 apagado em 15/11/2026** (`pct destroy 120 --purge`, a pedido do Yago). Ficaram no labsai os backups
+  `vzdump-lxc-120-2026_11_14` e `_15` (storage `backup`, ~275 MB cada) como cópia da chave do hbbs até ela
+  estar no Bitwarden; depois, apagar os dois (não somem sozinhos: o CT saiu do job de backup).
+- `Environment=HOME=/opt/tecnomax-connect/dados` nos serviços hbbs/hbbr (o hbbs logava "Failed to store
+  config" por causa do `ProtectHome`; inofensivo). Vale no próximo reinício dos serviços.
 
 ## Feito (09/11/2026)
 - Decisão do CEO: **fork próprio**, em vez do RustDesk Server Pro.

@@ -237,7 +237,7 @@ Duas máquinas físicas (ou VM pelo console do Proxmox), **nenhuma em RDP**.
 
 ## 10. Riscos
 
-- 🔴 **Chave do servidor** (`id_ed25519`) existe na VPS e no CT 120 desligado. Perda = todos os clientes precisam
+- 🔴 **Chave do servidor** (`id_ed25519`) existe na VPS e nos 2 backups vzdump do CT 120 apagado (labsai). Perda = todos os clientes precisam
   reinstalar. Cópia no Bitwarden antes de qualquer troca. 🟡 confirmar se a cópia já existe.
 - 🟠 **Uma pessoa só executa tudo.** Se o ciclo cair numa semana de implantação presencial, a
   verificação automática ainda entrega o relatório; a atualização em si espera, salvo caso 🔴.
