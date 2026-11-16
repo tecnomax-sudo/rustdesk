@@ -30,7 +30,8 @@ Trabalho da noite de 15→16/11/2026 a partir da `AVALIACAO-2026-11-15.md`, na b
   RustDesk trocar o arquivo, o build falha de propósito; como atualizar: `PLANO-ATUALIZACAO.md` 6.5.
 - **Duas versões:** input `variante` (`tecnico`|`suporte`|`ambas`). A Suporte (`TM_SO_RECEBER=1`,
   `conn-type=incoming` em `HARD_SETTINGS`) sai como `TecnomaxConnectSuporte-x64.exe`, "Tecnomax Connect
-  Suporte", só ID e senha. Mesmo nome técnico da completa (atualiza no lugar, mesmo ID). Publicar exige
+  Suporte", só ID e senha. Nome técnico próprio `TecnomaxConnectSuporte` (decisão de 16/11/2026):
+  pasta, serviço, ID e MSI separados; convive com a completa e não a substitui. Publicar exige
   a técnica no build, para `releases/latest/download/TecnomaxConnect-x64.exe` continuar existindo.
 - **Senha permanente:** `tecnomax/instalar-gerenciado.ps1` (instala em silêncio, define a senha,
   `verification-method` e `approve-mode`, imprime o ID; senha não gravada nem exibida). Documentado no

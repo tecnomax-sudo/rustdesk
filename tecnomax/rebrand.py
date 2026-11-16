@@ -22,8 +22,8 @@ Variáveis de ambiente:
                        (cópia do RuntimeBroker.exe do Windows + WindowInjection.dll)
   TM_SO_RECEBER=1      variante "Suporte" (cliente final): o programa só recebe conexões
                        (conn-type=incoming), como um "QuickSupport". Sem TM_APP_NAME, o nome
-                       de exibição passa a ser "Tecnomax Connect Suporte"; o nome técnico
-                       (TM_APP_ID) continua o mesmo da versão completa, de propósito (ver abaixo)
+                       de exibição passa a ser "Tecnomax Connect Suporte" e o nome técnico
+                       (TM_APP_ID) "TecnomaxConnectSuporte" (decisão de 16/11/2026, ver abaixo)
   TM_DRY_RUN=1         só confere se todas as trocas acham o alvo, sem gravar
 
 Uso: python3 tecnomax/rebrand.py   (na raiz do repositório)
@@ -159,11 +159,12 @@ def main():
     # Nome técnico (pastas, serviço, registro, pipes): o instalador do RustDesk recusa espaço
     # desde 31/10/2026 (o nome entra sem aspas em comandos como reg add HKCR\.<nome>).
     # O nome de exibição (com espaço) vai só para textos, janela, atalhos e "Aplicativos instalados".
-    # Na variante Suporte o nome técnico NÃO ganha o sufixo: as máquinas que já têm a versão
-    # completa instalada são atualizadas no lugar (mesma pasta, serviço, configuração e chave),
-    # em vez de ficarem com dois serviços disputando o mesmo ID no servidor.
+    # Na variante Suporte o nome técnico ganha nome próprio (decisão do Yago em 16/11/2026):
+    # pasta, serviço, configuração, ID e código de atualização do MSI separados da versão completa,
+    # e as duas podem conviver na mesma máquina (cada uma com seu ID). Instalar a Suporte NÃO
+    # substitui uma completa já instalada.
     nome_tecnico = env("TM_APP_ID", obrigatorio=False,
-                       padrao="TecnomaxConnect" if so_receber else nome.replace(" ", ""))
+                       padrao="TecnomaxConnectSuporte" if so_receber else nome.replace(" ", ""))
 
     if "RustDesk" in nome or "RustDesk" in nome_tecnico:
         sys.exit("ERRO: o nome não pode conter 'RustDesk' (o app passaria por cliente oficial)")

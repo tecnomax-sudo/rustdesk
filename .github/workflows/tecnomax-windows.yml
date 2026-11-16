@@ -55,9 +55,6 @@ env:
   ENGINE_SHA256: "ec8cabf36ee4ff24c8d98de25b00e70781eb03876265aee84d0fe554a110036e"
   TM_RENDEZVOUS_SERVER: ${{ vars.TM_RENDEZVOUS_SERVER }}
   TM_RS_PUB_KEY: ${{ vars.TM_RS_PUB_KEY }}
-  # Nome técnico (sem espaço): vira o nome do executável, da pasta de instalação e do serviço.
-  # É o mesmo nas duas variantes (ver tecnomax/rebrand.py, TM_SO_RECEBER).
-  TM_APP_ID: TecnomaxConnect
   # "1" tira do pacote o modo privacidade por janela injetada (ver tecnomax/rebrand.py).
   # Liga/desliga pela variável do repositório, sem mexer no código.
   TM_SEM_MODO_PRIVACIDADE: ${{ vars.TM_SEM_MODO_PRIVACIDADE }}
@@ -93,7 +90,10 @@ jobs:
         variante: ${{ fromJSON(inputs.variante == 'ambas' && '["tecnico","suporte"]' || format('["{0}"]', inputs.variante)) }}
     env:
       TM_SO_RECEBER: ${{ matrix.variante == 'suporte' && '1' || '' }}
-      # Nome dos arquivos entregues (o nome técnico do exe instalado não muda)
+      # Nome técnico (sem espaço): executável, pasta de instalação, serviço e código do MSI.
+      # Cada variante tem o seu desde 16/11/2026 (ver tecnomax/rebrand.py, TM_SO_RECEBER).
+      TM_APP_ID: ${{ matrix.variante == 'suporte' && 'TecnomaxConnectSuporte' || 'TecnomaxConnect' }}
+      # Nome dos arquivos entregues (igual ao nome técnico)
       TM_ARQ: ${{ matrix.variante == 'suporte' && 'TecnomaxConnectSuporte' || 'TecnomaxConnect' }}
     steps:
       - name: Export GitHub Actions cache environment variables

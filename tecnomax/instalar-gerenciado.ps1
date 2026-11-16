@@ -63,7 +63,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$NomeTecnico = 'TecnomaxConnect'   # pasta, exe e serviço (iguais nas duas variantes)
+# pasta, exe e serviço: cada variante tem o seu desde 16/11/2026
+$NomeTecnico = if ($Variante -eq 'Suporte') { 'TecnomaxConnectSuporte' } else { 'TecnomaxConnect' }
 $Release = 'https://github.com/tecnomax-sudo/rustdesk/releases/latest/download'
 
 function Falhar([string]$msg) {
