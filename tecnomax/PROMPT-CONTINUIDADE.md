@@ -11,9 +11,9 @@ Cole o bloco abaixo no Claude Code da outra máquina.
 ```
 Vou continuar o projeto Tecnomax Connect (acesso remoto próprio da Tecnomax, fork do RustDesk).
 Antes de qualquer coisa, leia nesta ordem:
-1. As regras de trabalho (AGENTS.md / MCP Tecnomax `ler_regras`) e a memória
-   `projeto-acesso-remoto-tecnomax` (clone de tecnomax-sudo/tecnomax-conhecimento ou MCP `ler`).
-   Faça `git pull` no clone do conhecimento primeiro.
+1. No BrainFree RAG (https://rag.tecnomax.tech/mcp): `despertar` (regras e índice) e depois
+   `buscar "Tecnomax Connect"` e `ler_documento` da memória `projeto-acesso-remoto-tecnomax`.
+   (O MCP antigo mcp.tecnomax.tech não existe mais: não usar.)
 2. No fork do cliente (`gh repo clone tecnomax-sudo/rustdesk`, branch `tecnomax`):
    `tecnomax/ESTADO-ATUAL.md`, `tecnomax/PLANO-ATUALIZACAO.md`, `tecnomax/ANTIVIRUS-FALSO-POSITIVO.md`
    e `tecnomax/rebrand.py`.
