@@ -1,9 +1,32 @@
 ---
 projeto: acesso-remoto-tecnomax
-atualizado: 15/11/2026
+atualizado: 16/11/2026
 ---
 
 # Estado atual
+
+## Preparado em 16/11/2026, ainda NÃO compilado (Actions bloqueado, chamado #4979864)
+Trabalho da noite de 15→16/11/2026 a partir da `AVALIACAO-2026-11-15.md`, na branch
+`melhorias-2026-11-16` (PR para a `tecnomax`, sem merge). Nada disso está em nenhuma release.
+- **Workflow mais leve:** só disparo manual (sem build por push), `build-topmost` só quando o modo
+  privacidade entra no pacote, MSI só com o input `msi`, `timeout-minutes` nos jobs.
+- **Motor do Flutter travado** pelo SHA256 `ec8cabf3…036e` (o upstream só tem a tag móvel `main`). Se a
+  RustDesk trocar o arquivo, o build falha de propósito; como atualizar: `PLANO-ATUALIZACAO.md` 6.5.
+- **Duas versões:** input `variante` (`tecnico`|`suporte`|`ambas`). A Suporte (`TM_SO_RECEBER=1`,
+  `conn-type=incoming` em `HARD_SETTINGS`) sai como `TecnomaxConnectSuporte-x64.exe`, "Tecnomax Connect
+  Suporte", só ID e senha. Mesmo nome técnico da completa (atualiza no lugar, mesmo ID). Publicar exige
+  a técnica no build, para `releases/latest/download/TecnomaxConnect-x64.exe` continuar existindo.
+- **Senha permanente:** `tecnomax/instalar-gerenciado.ps1` (instala em silêncio, define a senha,
+  `verification-method` e `approve-mode`, imprime o ID; senha não gravada nem exibida). Documentado no
+  `tecnomax/README.md`, com MSI por GPO/RMM.
+- **Atalhos e "Editor":** Menu Iniciar, Área de Trabalho e "Desinstalar ..." com o nome de exibição;
+  Publisher = "Tecnomax". Caminho de instalação, exe e serviço inalterados.
+- **Upstream:** ensaio na branch `upstream-1.5.3-2026-11-16` (merge do `master`, 28 commits além da 1.5.3):
+  sem conflito, rebrand todo "ok". Não juntado à `tecnomax` (regra: só tag estável; ver o PLANO, seção 1).
+- Dry-run do rebrand na `melhorias-2026-11-16`: 50 trocas ok (técnica) e 51 (Suporte); aplicado de
+  verdade no worktree e conferido o diff de `windows.rs` e `config.rs`.
+- Build local não tentado: esta máquina não tem MSVC/Windows SDK, Rust, Flutter nem LLVM, e o C++ do
+  Visual Studio só instala com elevação.
 
 ## Servidor de produção (desde 15/11/2026) — leia primeiro
 - **O servidor saiu do CT 120 (labsai) e está na VPS Hostinger `vps-dk-qr`** (`ssh vps-dk-qr`, Ubuntu 24.04,
@@ -70,7 +93,7 @@ atualizado: 15/11/2026
   pergunta "Preciso instalar?", lista de tecnologias trocada. Rollback: `561966a4` (com AnyDesk em
   "Outros sistemas") ou `810f8864` (piloto).
 - **Pacote mais limpo para antivírus (commit `7e69e139c`):** metadados Tecnomax no programa instalado, exe
-  interno `TecnomaxConnect.exe` (portátil extrai em `%LOCALAPPDATA%	ecnomaxconnect`), `.zip` na release,
+  interno `TecnomaxConnect.exe` (portátil extrai em `%LOCALAPPDATA%\tecnomaxconnect`), `.zip` na release,
   MSI experimental como artefato e **modo privacidade removido** (variável `TM_SEM_MODO_PRIVACIDADE=1`,
   decisão do CEO). Publicado como **pré-lançamento** `connect-v2026.11.10-7e69e13-teste` (abre e mostra a
   janela; instalação não testada). O `latest` segue `connect-v2026.11.09-0d501ee`.
@@ -122,11 +145,16 @@ O `rebrand.py` altera o submódulo `libs/hbb_common` no próprio build. Por isso
 - 🔵 Cota mensal de tráfego do plano KVM 1 não conferida (piloto gasta ~15 GB/mês, estimado de 6 dias).
 - 🟠 Sem assinatura de código (decisão do CEO): orientar o cliente de teste sobre o aviso do Windows.
 - 🟡 Gerar o par de chaves para o `custom.txt` (`TM_CUSTOM_PUB_KEY`), se for usar configuração por cliente.
-- 🟡 Instalador MSI (o workflow gera só o `.exe` portátil).
-- 🟡 O `.exe` interno ainda se chama `rustdesk.exe`: o portátil extrai para `%LOCALAPPDATA%\rustdesk`, a mesma pasta do RustDesk oficial (a configuração fica separada, em `%APPDATA%\Tecnomax Connect`).
-- 🟡 Testar a **instalação completa** (botão Instalar, pede elevação) com a release `0d501ee` e conferir
-  visualmente que a tela de servidor sumiu.
+- 🟡 Instalador MSI: pronto no workflow (input `msi`, com fabricante e links da Tecnomax) desde
+  16/11/2026, **não compilado** (Actions bloqueado). Antes de publicar: um build com `msi=true` e
+  `publicar=false` e instalação numa VM de teste.
+- ✅ ~~O `.exe` interno ainda se chama `rustdesk.exe`~~: é `TecnomaxConnect.exe` desde o commit `7e69e13`
+  (portátil extrai em `%LOCALAPPDATA%\tecnomaxconnect`).
+- ✅ ~~Testar a instalação completa~~: testada em 10/11/2026 com a release `7e69e13` (ver "Feito"). A
+  conferência visual de que a tela "Servidor ID/Relay" sumiu segue no checklist do `PLANO-ATUALIZACAO.md`.
 - 🔵 A consulta de "online" da lista de recentes falha por WebSocket (`query onlines ... Connection reset`):
-  as bolinhas de online não acendem. Não impede conectar.
-- 🔵 O atalho do Menu Iniciar e o "Editor" no desinstalador saem como "TecnomaxConnect" (nome técnico).
+  as bolinhas de online não acendem. Não impede conectar. Correção é no servidor (avaliação de 15/11/2026, item 7).
+- 🔵 O atalho do Menu Iniciar e o "Editor" no desinstalador saem como "TecnomaxConnect" (nome técnico):
+  **corrigido no `rebrand.py` em 16/11/2026, não compilado**. Vale para instalação nova; quem só clicar em
+  "atualizar" (`update_me`) mantém os atalhos antigos até reinstalar.
 - 🔵 macOS e Android: identificador do app e notarization ficam para depois do Windows.
