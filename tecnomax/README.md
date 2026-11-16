@@ -135,7 +135,7 @@ desinstalação pelo próprio Windows Installer. Um MSI atualiza o outro (o `Upg
 técnico). Linha de comando silenciosa:
 
 ```
-msiexec /i TecnomaxConnect-x64.msi /qn /norestart /l*v C:\Windows\Temp	ecnomax-connect.log
+msiexec /i TecnomaxConnect-x64.msi /qn /norestart /l*v C:\Windows\Temp\tecnomax-connect.log
 ```
 
 Propriedades úteis do projeto WiX do upstream: `INSTALLFOLDER="C:\..."`, `CREATEDESKTOPSHORTCUTS=0`,

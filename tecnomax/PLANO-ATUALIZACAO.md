@@ -34,6 +34,17 @@ Avisos de segurança publicados no GitHub para os dois repositórios originais e
 A 1.5.3 traz correções de endurecimento (relay só para endereços que o próprio peer ofereceu; bloqueio de
 opções sensíveis em atualização de estratégia), e nós já estamos nela.
 
+**Atualização em 16/11/2026 (cliente):** a 1.5.3 deixou de ser pré-lançamento e é a estável mais
+recente (a nossa base já é ela). O `master` do original está **28 commits** à frente (até `7949eca`),
+sem tag nova. Entre eles há endurecimentos que interessam: `fcb485b` (ignora os interruptores de
+teclado e área de transferência em conexões que não são de controle remoto) e `febee50` (só assina os
+serviços de área de transferência depois da autorização), além de `0bfe220` (texto do botão "Sair"
+configurável no modo só receber). Ensaio feito na branch `upstream-1.5.3-2026-11-16`: merge **sem
+conflito**, submódulo `hbb_common` inalterado, `rebrand.py` com todas as trocas "ok" (50 na versão
+técnica, 51 na Suporte), nenhuma mudança no job Windows do `flutter-build.yml`. Pela seção 3, a
+recomendação segue: esperar a 1.5.4 ou, se o Yago quiser os dois endurecimentos antes, trazer só eles
+por `cherry-pick`. A branch de ensaio **não** foi juntada à `tecnomax`.
+
 🟡 **Ponto de atenção:** hoje a nossa base é um **pré-lançamento** (1.5.3) no cliente e um ponto **entre
 versões** no servidor. Foi o que estava no ar no dia em que o fork nasceu. Não é para voltar atrás agora
 (o piloto está funcionando), mas a partir do próximo ciclo a regra é a da seção 3.
@@ -43,8 +54,10 @@ versões** no servidor. Foi o que estava no ar no dia em que o fork nasceu. Não
 - O build **não** busca nada no original sozinho. Ele compila o que estiver na nossa branch `tecnomax`.
   Ou seja: a versão só muda quando alguém junta (merge) o original na nossa branch. Isso é bom — nada
   muda sem decisão.
-- Cliente: `.github/workflows/tecnomax-windows.yml`. Roda `tecnomax/rebrand.py` e compila. Só publica
-  release quando disparado à mão com `publicar=true`.
+- Cliente: `.github/workflows/tecnomax-windows.yml`. **Só roda por disparo manual** (desde 16/11/2026
+  não há mais build por push). Roda `tecnomax/rebrand.py` e compila. Inputs: `variante`
+  (`tecnico`, `suporte` ou `ambas`), `publicar` (cria a release) e `msi` (gera também o `.msi`).
+  Detalhes na seção 6.4.
 - Servidor: `.github/workflows/tecnomax-build.yml`. Roda os testes, compila `hbbs` e `hbbr` e entrega
   como artefato. **Não há instalação automática** na VPS: os binários são copiados à mão.
 
@@ -131,10 +144,10 @@ entrega um relatório. Ela **não** publica nada, **não** mexe no servidor e **
 2. **Ensaio do rebrand** (confere se cada troca ainda acha o alvo, sem gravar nada):
 
    ```bash
-   cd C:/Tecnomax/projetos/rustdesk && TM_DRY_RUN=1 TM_RENDEZVOUS_SERVER=connect.tecnomax.tech TM_RS_PUB_KEY=x python tecnomax/rebrand.py
+   cd C:/Tecnomax/projetos/rustdesk && TM_DRY_RUN=1 TM_SEM_MODO_PRIVACIDADE=1 TM_RENDEZVOUS_SERVER=connect.tecnomax.tech TM_RS_PUB_KEY=x python tecnomax/rebrand.py
    ```
 
-   Todas as linhas precisam sair "ok". O `rebrand.py` funciona como "localizar e substituir" com trava:
+   Repetir com `TM_SO_RECEBER=1` (variante Suporte, uma troca a mais). Todas as linhas precisam sair "ok". O `rebrand.py` funciona como "localizar e substituir" com trava:
    cada troca exige achar o trecho **exatamente uma vez**. Se o original reescreveu aquele trecho, a
    troca acusa erro em vez de estragar o código em silêncio.
 
@@ -149,13 +162,15 @@ entrega um relatório. Ela **não** publica nada, **não** mexe no servidor e **
 4. Comparar o nosso workflow com o `flutter-build.yml` da versão nova (job do Windows x64): versão do
    Flutter, do Rust, do LLVM, passos novos. Copiar o que mudou para o `tecnomax-windows.yml`.
 
-5. Enviar a branch de ensaio e disparar o build **sem publicar** (`publicar=false`). O `.exe` sai como
+5. Enviar a branch de ensaio e disparar o build **sem publicar** (`variante=ambas`, `publicar=false`;
+   `msi=true` se for testar o MSI). O `.exe` sai como
    artefato do run, e o download do site continua na versão anterior.
 
 6. **Teste em duas máquinas fora de RDP** (checklist da seção 8). Máquina controlada em RDP dá tela
    preta e invalida o teste.
 
-7. Aprovado: juntar a branch de ensaio na `tecnomax`, disparar o build com `publicar=true`. A release
+7. Aprovado: juntar a branch de ensaio na `tecnomax`, disparar o build com `variante=ambas` e
+   `publicar=true` (seção 6.4). A release
    nova vira o download da página `/connect` sozinha (o link aponta para `releases/latest`).
 
 8. Conferir: SHA256 do download igual ao publicado; página `www.tecnomax.tech/connect` baixando a
@@ -185,7 +200,52 @@ entrega um relatório. Ela **não** publica nada, **não** mexe no servidor e **
 A troca derruba o registro por alguns segundos; sessões em andamento passam pelo hbbr e caem quando ele
 reinicia. Fazer fora do horário de atendimento.
 
-### 6.4 Fechar o ciclo
+### 6.4 Publicar as duas versões (Técnico e Suporte)
+
+Desde 16/11/2026 o workflow compila duas versões do mesmo código:
+
+| Versão | Arquivo na release | O que é |
+|---|---|---|
+| Técnico | `TecnomaxConnect-x64.exe` (+ `.zip`, `.msi`) | completa: conecta e recebe. **É o botão da `/connect`** |
+| Suporte | `TecnomaxConnectSuporte-x64.exe` (+ `.zip`, `.msi`) | "Tecnomax Connect Suporte": só mostra ID e senha e só recebe |
+
+Passo a passo: Actions → `tecnomax-windows` → Run workflow, na branch `tecnomax`, com
+`variante=ambas`, `publicar=true` e `msi` conforme o caso. A release sai com os arquivos das duas e
+um `.sha256` de cada.
+
+- O workflow **recusa publicar** com `variante=suporte` sozinha: a release vira a `latest`, e o link
+  `releases/latest/download/TecnomaxConnect-x64.exe` do site precisa achar a versão técnica nela.
+- Para testar só a Suporte, `variante=suporte` com `publicar=false` (sai como artefato do run).
+- As duas têm o mesmo nome técnico (`TecnomaxConnect`): instalar a Suporte numa máquina com a técnica
+  atualiza no lugar, com o mesmo ID e a mesma senha permanente.
+- Link de download da Suporte, quando publicada:
+  `https://github.com/tecnomax-sudo/rustdesk/releases/latest/download/TecnomaxConnectSuporte-x64.exe`
+  (🟡 decidir se e onde ela entra no site).
+
+### 6.5 Motor do Flutter (hash travado)
+
+O build troca o motor do Flutter por um modificado pela RustDesk. O upstream só publica esse arquivo
+na tag **móvel** `main` de `rustdesk/engine` (não há versão com nome). Para dois builds do mesmo
+commit saírem iguais e nada trocado em silêncio entrar no nosso `.exe`, o workflow confere o SHA256:
+
+| Item | Valor (conferido em 16/11/2026) |
+|---|---|
+| `ENGINE_URL` | `https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip` |
+| `ENGINE_SHA256` | `ec8cabf36ee4ff24c8d98de25b00e70781eb03876265aee84d0fe554a110036e` |
+| Asset | id `210168939`, 63.301.215 bytes, enviado em 01/12/2024 |
+
+**Se o build falhar no passo "Replace engine" com "Motor do Flutter mudou no upstream"**, é de
+propósito: a RustDesk trocou o arquivo. Como atualizar:
+
+1. Ver o que mudou: `gh api repos/rustdesk/engine/releases/tags/main --jq '.assets[]|"\(.id) \(.size) \(.updated_at)"'`
+   e, no `flutter-build.yml` do original, se a URL e a versão do Flutter continuam as mesmas.
+2. Baixar numa pasta vazia e calcular o hash:
+   `curl -sSLo motor.zip <ENGINE_URL> && sha256sum motor.zip`.
+3. Trocar `ENGINE_SHA256` (e o comentário com id, tamanho e data) no `tecnomax-windows.yml`, num commit
+   próprio que diga de onde veio o hash novo.
+4. Build **sem publicar** e o checklist da seção 8 antes de qualquer release.
+
+### 6.6 Fechar o ciclo
 - Atualizar `tecnomax/ESTADO-ATUAL.md` (versão base nova, release, o que mudou no rebrand).
 - Atualizar a memória `projeto-acesso-remoto-tecnomax` com data absoluta.
 - Apagar a branch de ensaio.
@@ -225,6 +285,12 @@ Duas máquinas físicas (ou VM pelo console do Proxmox), **nenhuma em RDP**.
 - [ ] Nenhuma menção a "RustDesk" nas telas principais
 - [ ] No servidor: `hbbs.log` sem erro repetido; `hbbr.log` com `got paired` em cada sessão
 - [ ] O RustDesk oficial **fechado** nas duas máquinas durante o teste (mesmo ID, chaves diferentes)
+- [ ] Instalado: Menu Iniciar com a pasta e o atalho "Tecnomax Connect" e "Desinstalar Tecnomax
+      Connect"; em Aplicativos instalados, nome "Tecnomax Connect" e editor "Tecnomax"
+- [ ] Versão **Suporte**: abre só com ID e senha (sem "Conectar a"), título "Tecnomax Connect Suporte";
+      a técnica conecta nela; instalar a Suporte por cima da técnica mantém o ID
+- [ ] `instalar-gerenciado.ps1` numa VM de teste: imprime o ID, e a técnica entra com a senha
+      permanente sem ninguém clicar do outro lado
 
 ## 9. Como voltar atrás
 
