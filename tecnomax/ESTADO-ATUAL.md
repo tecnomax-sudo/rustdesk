@@ -5,6 +5,22 @@ atualizado: 16/11/2026
 
 # Estado atual
 
+## Servidor atualizado em 16/11/2026 (em produção)
+- **hbbs/hbbr do commit `121728b`** do rustdesk-server (CI 43783088929, 16 testes ok) na VPS desde
+  **01:03:25 UTC de 16/11/2026**: o hbbs responde `OnlineRequest` pela sessão WebSocket (`/ws/id`).
+  **As bolinhas de online acendem**: teste pela internet devolveu `states: 70` (3 de 5 IDs online).
+  O túnel não precisou de regra nova: o cliente leva a consulta da 21115 para o mesmo `/ws/id`.
+- **Limites do relay** na unidade do hbbr: `TOTAL_BANDWIDTH=200`, `SINGLE_BANDWIDTH=20`, `LIMIT_SPEED=8`
+  (Mb/s, somando os dois sentidos). O `HOME` dos serviços passou a valer (sem "Failed to store config").
+  Unidades versionadas em `tecnomax-sudo/rustdesk-server`, pasta `tecnomax/systemd/` (commit `e8a1d8a`).
+- **Rollback:** binários anteriores e unidades originais em `/opt/tecnomax-connect/bin/anterior-2026-11-15/`.
+- **WebSocket ocioso (~40 s):** regra do próprio hbbs (heartbeat 10 s, fecha após 35 s sem resposta);
+  os fechamentos vinham de um cliente só (206524240). Nada mudado.
+- **Sonda externa no labsai** (`tecnomax-connect-sonda.timer`, a cada 5 min): testa `/ws/id` e `/ws/relay`
+  (101), alerta por e-mail pelo SMTP do PVE após 2 falhas seguidas e avisa a recuperação. Teste de falha ok.
+- **Pendente do Yago:** regra de limite de requisições na Cloudflare para `/ws/*` (o acesso à API desta
+  máquina não alcança a zona `tecnomax.tech`; passo a passo no RAG).
+
 ## Preparado em 16/11/2026, ainda NÃO compilado (Actions bloqueado, chamado #4979864)
 Trabalho da noite de 15→16/11/2026 a partir da `AVALIACAO-2026-11-15.md`, na branch
 `melhorias-2026-11-16` (PR para a `tecnomax`, sem merge). Nada disso está em nenhuma release.
