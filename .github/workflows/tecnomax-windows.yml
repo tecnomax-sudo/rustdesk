@@ -2,18 +2,36 @@
 # Baseado no job build-for-windows-flutter do flutter-build.yml do upstream, só a parte x64.
 # Servidor e chave vêm das variáveis do repositório (não são segredo: vão dentro do .exe).
 # Sem assinatura de código por enquanto: o .exe sai "unsigned".
+#
+# Só roda por disparo manual (Actions → tecnomax-windows → Run workflow). Cada build leva ~40 min
+# por variante; não há mais disparo automático por push.
+#
+# Variantes (input "variante"):
+#   tecnico → TecnomaxConnect-x64.exe, versão completa (conecta e recebe). É o arquivo do botão da
+#             página /connect: .../releases/latest/download/TecnomaxConnect-x64.exe
+#   suporte → TecnomaxConnectSuporte-x64.exe, "Tecnomax Connect Suporte", só recebe conexões
+#             (conn-type=incoming), para o cliente final
+#   ambas   → as duas, em paralelo
+# Publicar exige a variante técnica no build (tecnico ou ambas): a release vira a "latest" e o link
+# do site precisa continuar achando TecnomaxConnect-x64.exe nela.
 name: tecnomax-windows
 
 on:
   workflow_dispatch:
     inputs:
+      variante:
+        description: "Qual programa compilar"
+        type: choice
+        options: [tecnico, suporte, ambas]
+        default: tecnico
       publicar:
-        description: "Publicar como release (vira o download do site)"
+        description: "Publicar como release (vira o download do site; exige tecnico ou ambas)"
         type: boolean
         default: false
-  push:
-    branches: [tecnomax]
-    paths: ["tecnomax/rebrand.py", "tecnomax/marca/**", ".github/workflows/tecnomax-windows.yml"]
+      msi:
+        description: "Gerar também o instalador .msi (vai para a release se publicar)"
+        type: boolean
+        default: false
 
 # um build novo na mesma branch cancela o que estiver rodando
 concurrency:
@@ -29,19 +47,26 @@ env:
   FLUTTER_VERSION: "3.24.5"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
+  # Motor do Flutter modificado pela RustDesk. O upstream só publica a tag móvel "main" (asset
+  # id 210168939, enviado em 01/12/2024, 63.301.215 bytes). Travado pelo SHA256: se a RustDesk
+  # trocar o arquivo, o build FALHA de propósito no passo "Replace engine". Como atualizar o
+  # hash: tecnomax/PLANO-ATUALIZACAO.md, seção "Motor do Flutter".
+  ENGINE_URL: "https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip"
+  ENGINE_SHA256: "ec8cabf36ee4ff24c8d98de25b00e70781eb03876265aee84d0fe554a110036e"
   TM_RENDEZVOUS_SERVER: ${{ vars.TM_RENDEZVOUS_SERVER }}
   TM_RS_PUB_KEY: ${{ vars.TM_RS_PUB_KEY }}
-  # Nome técnico (sem espaço): vira o nome do executável, da pasta de instalação e do serviço.
-  TM_APP_ID: TecnomaxConnect
   # "1" tira do pacote o modo privacidade por janela injetada (ver tecnomax/rebrand.py).
   # Liga/desliga pela variável do repositório, sem mexer no código.
   TM_SEM_MODO_PRIVACIDADE: ${{ vars.TM_SEM_MODO_PRIVACIDADE }}
 
 jobs:
+  # Jobs que chamam workflow reutilizável não aceitam timeout-minutes (limite do GitHub).
   generate-bridge:
     uses: ./.github/workflows/bridge.yml
 
+  # DLL do modo privacidade: só compila quando ela vai entrar no pacote.
   build-topmost:
+    if: ${{ vars.TM_SEM_MODO_PRIVACIDADE != '1' }}
     uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
     with:
       upload-artifact: true
@@ -52,7 +77,24 @@ jobs:
 
   build-windows:
     needs: [generate-bridge, build-topmost]
+    # build-topmost pulado (modo privacidade fora) não pode pular este job em cascata
+    if: >-
+      ${{ !cancelled()
+          && needs.generate-bridge.result == 'success'
+          && (needs.build-topmost.result == 'success' || needs.build-topmost.result == 'skipped') }}
     runs-on: windows-2022
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        variante: ${{ fromJSON(inputs.variante == 'ambas' && '["tecnico","suporte"]' || format('["{0}"]', inputs.variante)) }}
+    env:
+      TM_SO_RECEBER: ${{ matrix.variante == 'suporte' && '1' || '' }}
+      # Nome técnico (sem espaço): executável, pasta de instalação, serviço e código do MSI.
+      # Cada variante tem o seu desde 16/11/2026 (ver tecnomax/rebrand.py, TM_SO_RECEBER).
+      TM_APP_ID: ${{ matrix.variante == 'suporte' && 'TecnomaxConnectSuporte' || 'TecnomaxConnect' }}
+      # Nome dos arquivos entregues (igual ao nome técnico)
+      TM_ARQ: ${{ matrix.variante == 'suporte' && 'TecnomaxConnectSuporte' || 'TecnomaxConnect' }}
     steps:
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
@@ -93,7 +135,12 @@ jobs:
       - name: Replace engine with rustdesk custom flutter engine
         run: |
           flutter precache --windows
-          Invoke-WebRequest -Uri https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip -OutFile windows-x64-release.zip
+          Invoke-WebRequest -Uri $env:ENGINE_URL -OutFile windows-x64-release.zip
+          $hash = (Get-FileHash windows-x64-release.zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:ENGINE_SHA256) {
+            Write-Error "Motor do Flutter mudou no upstream: SHA256 $hash, esperado $env:ENGINE_SHA256. Ver tecnomax/PLANO-ATUALIZACAO.md (Motor do Flutter)."
+            exit 1
+          }
           Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
           mv -Force windows-x64-release/*  C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
 
@@ -111,9 +158,10 @@ jobs:
           targets: x86_64-pc-windows-msvc
           components: "rustfmt"
 
+      # Cache por variante: o conn-type muda o hbb_common e recompila quase tudo
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: tecnomax-windows-2022
+          prefix-key: tecnomax-windows-2022-${{ matrix.variante }}
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
@@ -149,7 +197,7 @@ jobs:
       - name: Upload pasta
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tecnomax-connect-windows-x64-pasta
+          name: connect-pasta-${{ matrix.variante }}
           path: rustdesk
 
       - name: Build self-extracted executable
@@ -161,86 +209,114 @@ jobs:
           python3 ./generate.py -f ../../rustdesk/ -o . -e "../../rustdesk/${TM_APP_ID}.exe"
           popd
           mkdir -p ./saida
-          mv ./target/release/rustdesk-portable-packer.exe "./saida/TecnomaxConnect-${GITHUB_SHA::7}-x64.exe"
+          mv ./target/release/rustdesk-portable-packer.exe "./saida/${TM_ARQ}-${GITHUB_SHA::7}-x64.exe"
           # Mesmo programa em .zip (pasta pronta, sem autoextração): alternativa para quando o
           # antivírus implica com o .exe que se descompacta sozinho.
           mv ./rustdesk "./${TM_APP_ID}"
-          7z a -tzip "./saida/TecnomaxConnect-${GITHUB_SHA::7}-x64.zip" "./${TM_APP_ID}" > /dev/null
+          7z a -tzip "./saida/${TM_ARQ}-${GITHUB_SHA::7}-x64.zip" "./${TM_APP_ID}" > /dev/null
           mv "./${TM_APP_ID}" ./rustdesk
           sha256sum ./saida/*
 
       - name: Upload exe
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tecnomax-connect-windows-x64
+          name: connect-exe-${{ matrix.variante }}
           path: saida
           if-no-files-found: error
 
-      # Experimental: instalador .msi (formato que os antivírus tratam melhor que autoextraível).
-      # Sai só como artefato do build, não vai para a release, e uma falha aqui não derruba o build.
+      # Instalador .msi (input "msi"). Mesmo projeto WiX do upstream (res/msi), com nome técnico,
+      # fabricante e links da Tecnomax; na variante Suporte o MSI leva CC_CONNECTION_TYPE=incoming.
+      # O UpgradeCode sai do nome técnico, igual nas duas variantes: um MSI atualiza o outro.
+      # Pedido no disparo, uma falha aqui derruba o build (e a release não sai pela metade).
       - name: Add MSBuild to PATH
-        continue-on-error: true
+        if: ${{ inputs.msi }}
         uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
 
-      - name: Build msi (experimental)
-        continue-on-error: true
+      - name: Build msi
+        if: ${{ inputs.msi }}
+        shell: bash
         run: |
+          set -e
+          CONN=""
+          if [ "$TM_SO_RECEBER" = "1" ]; then CONN="--conn-type incoming"; fi
           pushd ./res/msi
-          python preprocess.py --arp -d ../../rustdesk --app-name "$env:TM_APP_ID" -m "Tecnomax"
+          python preprocess.py -d ../../rustdesk --app-name "$TM_APP_ID" -m "Tecnomax" $CONN \
+            --custom-arp '{"Contact": {"msi": "ARPCONTACT", "v": "https://www.tecnomax.tech/suporte"}, "HelpLink": {"msi": "ARPHELPLINK", "v": "https://www.tecnomax.tech/suporte"}, "ReadMe": {"msi": "ARPREADME", "v": "https://www.tecnomax.tech/connect"}}'
           nuget restore msi.sln
-          msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
-          $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
+          msbuild msi.sln -p:Configuration=Release -p:Platform=x64 -p:TargetVersion=Windows10
+          MSI=$(ls ./Package/bin/*/Release/en-us/Package.msi | head -n1)
           popd
-          mkdir ./saida-msi
-          mv $msi.FullName "./saida-msi/TecnomaxConnect-x64.msi"
+          mkdir -p ./saida-msi
+          mv "./res/msi/${MSI#./}" "./saida-msi/${TM_ARQ}-x64.msi"
+          sha256sum ./saida-msi/*
 
-      - name: Upload msi (experimental)
-        continue-on-error: true
+      - name: Upload msi
+        if: ${{ inputs.msi }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tecnomax-connect-windows-x64-msi-experimental
+          name: connect-msi-${{ matrix.variante }}
           path: saida-msi
-          if-no-files-found: warn
+          if-no-files-found: error
 
   # Release pública: o site aponta para .../releases/latest/download/TecnomaxConnect-x64.exe,
-  # então o nome do arquivo é fixo. Só roda no disparo manual com "publicar".
+  # então os nomes dos arquivos são fixos. Só com "publicar" e com a variante técnica no build.
   release:
     needs: [build-windows]
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publicar }}
+    if: >-
+      ${{ !cancelled() && needs.build-windows.result == 'success'
+          && inputs.publicar && inputs.variante != 'suporte' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: tecnomax-connect-windows-x64
+          pattern: connect-exe-*
           path: saida
+          merge-multiple: true
+      - if: ${{ inputs.msi }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: connect-msi-*
+          path: saida
+          merge-multiple: true
       - name: Publicar release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           cd saida
-          mv TecnomaxConnect-*-x64.exe TecnomaxConnect-x64.exe
-          mv TecnomaxConnect-*-x64.zip TecnomaxConnect-x64.zip
-          sha256sum TecnomaxConnect-x64.exe > TecnomaxConnect-x64.exe.sha256
-          sha256sum TecnomaxConnect-x64.zip > TecnomaxConnect-x64.zip.sha256
-          DATA=$(date -u +%Y.%m.%d)
           CURTO=${GITHUB_SHA::7}
+          # TecnomaxConnect-<sha>-x64.exe → TecnomaxConnect-x64.exe (idem Suporte e .zip)
+          for f in *-"${CURTO}"-x64.*; do mv "$f" "${f/-${CURTO}/}"; done
+          # A release vira a "latest": sem a versão completa, o botão do site quebraria
+          test -f TecnomaxConnect-x64.exe
+          for f in *-x64.exe *-x64.zip *-x64.msi; do
+            if [ -f "$f" ]; then sha256sum "$f" > "$f.sha256"; fi
+          done
+          DATA=$(date -u +%Y.%m.%d)
           TAG="connect-v${DATA}-${CURTO}"
-          cat > notas.md <<EOF
-          Tecnomax Connect para Windows (x64), versão ${DATA}.
-
-          - Servidor: ${TM_RENDEZVOUS_SERVER}
-          - SHA256 do .exe: $(cut -d' ' -f1 TecnomaxConnect-x64.exe.sha256)
-          - SHA256 do .zip (mesmo programa, sem autoextração): $(cut -d' ' -f1 TecnomaxConnect-x64.zip.sha256)
-          - Executável sem assinatura de código: o Windows avisa "editor desconhecido" ao abrir.
-
-          Baseado no RustDesk (AGPL-3.0). Código-fonte desta versão:
-          https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}
-          e do servidor: https://github.com/tecnomax-sudo/rustdesk-server/tree/tecnomax
-          EOF
-          gh release create "$TAG" TecnomaxConnect-x64.exe TecnomaxConnect-x64.exe.sha256 \
-            TecnomaxConnect-x64.zip TecnomaxConnect-x64.zip.sha256 \
+          {
+            echo "Tecnomax Connect para Windows (x64), versão ${DATA}."
+            echo
+            echo "- Servidor: ${TM_RENDEZVOUS_SERVER}"
+            echo "- TecnomaxConnect-x64.exe: versão completa (técnico: conecta e recebe)."
+            if [ -f TecnomaxConnectSuporte-x64.exe ]; then
+              echo "- TecnomaxConnectSuporte-x64.exe: \"Tecnomax Connect Suporte\", só recebe conexões (cliente final)."
+            fi
+            echo "- .zip: mesmo programa, sem autoextração. .msi (quando houver): instalação silenciosa por GPO/RMM."
+            echo "- Executáveis sem assinatura de código: o Windows avisa \"editor desconhecido\" ao abrir."
+            echo
+            echo "SHA256:"
+            echo '```'
+            cat ./*.sha256
+            echo '```'
+            echo
+            echo "Baseado no RustDesk (AGPL-3.0). Código-fonte desta versão:"
+            echo "https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}"
+            echo "e do servidor: https://github.com/tecnomax-sudo/rustdesk-server/tree/tecnomax"
+          } > notas.md
+          gh release create "$TAG" ./*-x64.* \
             -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Tecnomax Connect ${DATA}" --notes-file notas.md --latest

@@ -20,6 +20,10 @@ Variáveis de ambiente:
   TM_APP_ID            nome técnico, sem espaço (padrão: TM_APP_NAME sem espaços)
   TM_SEM_MODO_PRIVACIDADE=1  tira do pacote o "modo privacidade" por janela injetada
                        (cópia do RuntimeBroker.exe do Windows + WindowInjection.dll)
+  TM_SO_RECEBER=1      variante "Suporte" (cliente final): o programa só recebe conexões
+                       (conn-type=incoming), como um "QuickSupport". Sem TM_APP_NAME, o nome
+                       de exibição passa a ser "Tecnomax Connect Suporte" e o nome técnico
+                       (TM_APP_ID) "TecnomaxConnectSuporte" (decisão de 16/11/2026, ver abaixo)
   TM_DRY_RUN=1         só confere se todas as trocas acham o alvo, sem gravar
 
 Uso: python3 tecnomax/rebrand.py   (na raiz do repositório)
@@ -73,6 +77,63 @@ def trocar(arquivo, padrao, novo, dry):
     print(f"ok  {arquivo}")
 
 
+def trocar_no_trecho(arquivo, inicio, fim, trocas, dry):
+    """Como trocar(), mas dentro de um trecho (do regex `inicio` até o primeiro `fim` depois
+    dele) e com a quantidade exata de ocorrências de cada padrão. Serve para textos que se
+    repetem dentro da mesma função (ex.: o nome do atalho, presente em vários comandos do cmd)."""
+    texto = PENDENTES.get(arquivo)
+    if texto is None:
+        texto = (RAIZ / arquivo).read_text(encoding="utf-8")
+    ini = list(re.finditer(inicio, texto, flags=re.M))
+    if len(ini) != 1:
+        sys.exit(f"ERRO: {arquivo}: início do trecho encontrado {len(ini)}x (esperado 1): {inicio}\n"
+                 "Nada foi gravado. Se o rebrand já foi aplicado, restaure com git checkout.")
+    m_fim = re.compile(fim, flags=re.M).search(texto, ini[0].end())
+    if not m_fim:
+        sys.exit(f"ERRO: {arquivo}: fim do trecho não encontrado: {fim}\nNada foi gravado.")
+    a, b = ini[0].start(), m_fim.start()
+    trecho = texto[a:b]
+    for padrao, novo, vezes in trocas:
+        achados = len(re.findall(padrao, trecho, flags=re.M))
+        if achados != vezes:
+            sys.exit(f"ERRO: {arquivo}: no trecho {inicio}, padrão encontrado {achados}x "
+                     f"(esperado {vezes}): {padrao}\nNada foi gravado.")
+        trecho = re.sub(padrao, lambda _: novo, trecho, flags=re.M)
+    PENDENTES[arquivo] = texto[:a] + trecho + texto[b:]
+    print(f"ok  {arquivo} ({len(trocas)} trocas em {inicio})")
+
+
+def atalhos_com_nome_de_exibicao(nome, dry):
+    """Atalhos e pasta do Menu Iniciar com o nome de exibição ("Tecnomax Connect"), não com o
+    técnico ("TecnomaxConnect"). Pasta de instalação, exe, serviço e registro seguem com o nome
+    técnico. O atalho da bandeja na pasta Inicializar fica com o nome técnico (ninguém o vê)."""
+    w = "src/platform/windows.rs"
+    pm = r'%ProgramData%\\Microsoft\\Windows\\Start Menu\\Programs\\'  # como está no .rs
+    # Pasta do Menu Iniciar (a desinstalação lê o mesmo valor e apaga a pasta inteira)
+    trocar(w, r'"%ProgramData%\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\\{\}",\n'
+              r'\s+crate::get_app_name\(\)\n',
+           f'"{pm}{{}}",\n        "{nome}"\n', dry)
+    # install_me: atalho do programa, atalho de desinstalar e os comandos que copiam/apagam
+    # esses arquivos (Área de Trabalho, Menu Iniciar, pasta do programa, pasta temporária)
+    trocar_no_trecho(w, r'^pub fn install_me\(', r'^pub fn run_after_install\(', [
+        (r'Uninstall \{app_name\}\.lnk', f'Desinstalar {nome}.lnk', 5),
+        (r'\{app_name\}\.lnk', f'{nome}.lnk', 4),
+        (r'tmp_path,\n\s+crate::get_app_name\(\)\n', f'tmp_path,\n            "{nome}"\n', 1),
+    ], dry)
+    # Desinstalação: apaga o atalho da Área de Trabalho com o nome novo e, para quem instalou
+    # uma versão anterior, também o atalho e a pasta do Menu Iniciar com o nome técnico
+    desktop_antigo = r'\"%PUBLIC%\\Desktop\\{app_name}.lnk\"'
+    desktop_novo = rf'\"%PUBLIC%\\Desktop\\{nome}.lnk\"'
+    pasta_antiga = rf'\"{pm}{{app_name}}\"'
+    trocar_no_trecho(w, r'^fn get_uninstall\(', r'^pub fn uninstall_me\(', [
+        (r'^(\s+)if exist \\"%PUBLIC%\\\\Desktop\\\\\{app_name\}\.lnk\\" del /f /q '
+         r'\\"%PUBLIC%\\\\Desktop\\\\\{app_name\}\.lnk\\"\n',
+         f'    if exist {desktop_antigo} del /f /q {desktop_antigo}\n'
+         f'    if exist {desktop_novo} del /f /q {desktop_novo}\n'
+         f'    if exist {pasta_antiga} rd /s /q {pasta_antiga}\n', 1),
+    ], dry)
+
+
 def gravar_pendentes():
     for arquivo, texto in PENDENTES.items():
         (RAIZ / arquivo).write_text(texto, encoding="utf-8", newline="")
@@ -82,8 +143,10 @@ def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
-    dry =os.environ.get("TM_DRY_RUN") == "1"
-    nome = env("TM_APP_NAME", obrigatorio=False, padrao="Tecnomax Connect")
+    dry = os.environ.get("TM_DRY_RUN") == "1"
+    so_receber = os.environ.get("TM_SO_RECEBER") == "1"
+    nome = env("TM_APP_NAME", obrigatorio=False,
+               padrao="Tecnomax Connect Suporte" if so_receber else "Tecnomax Connect")
     servidor = env("TM_RENDEZVOUS_SERVER")
     chave = env("TM_RS_PUB_KEY")
     chave_custom = env("TM_CUSTOM_PUB_KEY", obrigatorio=False) or CHAVE_NULA
@@ -95,13 +158,22 @@ def main():
 
     # Nome técnico (pastas, serviço, registro, pipes): o instalador do RustDesk recusa espaço
     # desde 31/10/2026 (o nome entra sem aspas em comandos como reg add HKCR\.<nome>).
-    # O nome de exibição (com espaço) vai só para textos e janela.
-    nome_tecnico = env("TM_APP_ID", obrigatorio=False, padrao=nome.replace(" ", ""))
+    # O nome de exibição (com espaço) vai só para textos, janela, atalhos e "Aplicativos instalados".
+    # Na variante Suporte o nome técnico ganha nome próprio (decisão do Yago em 16/11/2026):
+    # pasta, serviço, configuração, ID e código de atualização do MSI separados da versão completa,
+    # e as duas podem conviver na mesma máquina (cada uma com seu ID). Instalar a Suporte NÃO
+    # substitui uma completa já instalada.
+    nome_tecnico = env("TM_APP_ID", obrigatorio=False,
+                       padrao="TecnomaxConnectSuporte" if so_receber else nome.replace(" ", ""))
 
     if "RustDesk" in nome or "RustDesk" in nome_tecnico:
         sys.exit("ERRO: o nome não pode conter 'RustDesk' (o app passaria por cliente oficial)")
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_-]*", nome_tecnico):
         sys.exit(f"ERRO: TM_APP_ID '{nome_tecnico}' só pode ter letras, números, - e _")
+    # O nome de exibição vira nome de atalho (.lnk) e de pasta do Menu Iniciar, e entra em
+    # strings de format!() e em comandos do cmd.exe: nada de chave, aspas, % ou &.
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._-]*", nome):
+        sys.exit(f"ERRO: TM_APP_NAME '{nome}' só pode ter letras, números, espaço, ponto, - e _")
 
     cfg = "libs/hbb_common/src/config.rs"
     # Servidor e chave padrão do cliente
@@ -122,6 +194,10 @@ def main():
            f'SyncReturn("{rust_str(nome)}".to_owned())', dry)
     trocar("src/platform/windows.rs", r'/v DisplayName /t REG_SZ /d \\"\{app_name\}\\"',
            f'/v DisplayName /t REG_SZ /d \\"{rust_str(nome)}\\"', dry)
+    # "Editor" em Aplicativos instalados: o upstream grava o nome do app; aqui vai a empresa
+    trocar("src/platform/windows.rs", r'/v Publisher /t REG_SZ /d \\"\{app_name\}\\"',
+           f'/v Publisher /t REG_SZ /d \\"{rust_str(empresa)}\\"', dry)
+    atalhos_com_nome_de_exibicao(nome, dry)
     # Instalação: o XCOPY leva o exe com o nome que ele tem no pacote portátil (rustdesk.exe), mas
     # todo o resto do script (registro, atalhos, serviço) aponta para "<nome técnico>.exe". No
     # upstream isso passa porque RustDesk.exe e rustdesk.exe são o mesmo arquivo no Windows; com
@@ -134,13 +210,13 @@ def main():
     trocar(cfg, r'ORG: RwLock<String> = RwLock::new\("com\.carriez"\.to_owned\(\)\)',
            f'ORG: RwLock<String> = RwLock::new("{rust_str(org)}".to_owned())', dry)
 
-    # WebSocket fixo: o servidor da Tecnomax só é alcançável pelo túnel da Cloudflare (443),
     # Esconde a tela "Servidor ID/Relay": o servidor e a chave já vêm gravados no programa,
     # e o cliente que digitasse algo ali deixaria de achar o servidor da Tecnomax
     trocar(cfg, r'pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
            'pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
            '        ("hide-server-settings".to_owned(), "Y".to_owned()),\n'
            '    ]));', dry)
+    # WebSocket fixo: o servidor da Tecnomax só é alcançável pelo túnel da Cloudflare (443),
     # e OVERWRITE_SETTINGS tem prioridade sobre o que o usuário configurar
     trocar(cfg, r'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
            'pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
@@ -152,6 +228,16 @@ def main():
            r'let protocol = if is_domain \{\s*let api_server = Config::get_option\("api-server"\);\s*'
            r'if api_server\.starts_with\("https"\) \{\s*"wss"\s*\} else \{\s*"ws"\s*\}\s*\} else \{',
            'let protocol = if is_domain {\n        "wss"\n    } else {', dry)
+
+    # Variante Suporte (TM_SO_RECEBER=1): conn-type=incoming nas configurações "duras"
+    # (HARD_SETTINGS), as mesmas que o custom.txt de um cliente personalizado preenche.
+    # is_incoming_only() lê exatamente essa chave: a interface vira só ID + senha (sem campo
+    # "Conectar a", sem lista de recentes) e o programa recusa abrir sessão de saída.
+    if so_receber:
+        trocar(cfg, r'pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);',
+               'pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([\n'
+               '        ("conn-type".to_owned(), "incoming".to_owned()),\n'
+               '    ]));', dry)
 
     # Chave que valida o custom.txt: tira a da RustDesk
     trocar("src/common.rs", r'const KEY: &str = "5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=";',
